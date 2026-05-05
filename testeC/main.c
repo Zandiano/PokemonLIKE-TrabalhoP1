@@ -26,35 +26,38 @@ int main(){
 
 
     // JOGADOR
-    int posX = 45;                  /// Posição X do jogador
-	int posY = 13;                  /// Posição Y do jogador
+    int posX = 45;                  /// Posiï¿½ï¿½o X do jogador
+	int posY = 13;                  /// Posiï¿½ï¿½o Y do jogador
 
 	int velo = 2;                   /// Velocidade do jogador
     int level = 1;                  /// Level do jogador
 	int healthMax = level * 5 + 15; /// Vida maxima do jogador
     int health = healthMax;         /// Vida do jogador
-    int ataque = level * 2 - 2;     /// Ataque do jogador
-    int defesa = level * 2 - 8;     /// Defesa do jogador
-    int dano = level * 2 + 2;       /// Dano do jogador
+    int healthPct = 16;
+    int ataque = 0;     /// Ataque do jogador
+    int defesa = 0;     /// Defesa do jogador
+    int dano = 0;       /// Dano do jogador
 
     //
 
     // ENEMY
-	int posX_Enemy = 80;                    /// Posição X do inimigo
-	int posY_Enemy = 20;                    /// Posição Y do inimigo
+	int posX_Enemy = 80;                    /// Posiï¿½ï¿½o X do inimigo
+	int posY_Enemy = 20;                    /// Posiï¿½ï¿½o Y do inimigo
 
 	int health_Enemy = 100;                 /// Vida do inimigo
+    int healthMax_Enemy = 100;
+    int healthPct_Enemy = 16;
 	int velo_Enemy = 1;                     /// Velocidade do inimigo
 
-	int aggro_Enemy = 12;                   /// Distância de aggro do inimigo
+	int aggro_Enemy = 12;                   /// Distï¿½ncia de aggro do inimigo
     int aggroed_Enemy = 0;                  /// Valor booleano do aggro
 
     int color_Enemy = BLACK;                /// Cor do inimigo
 
     int level_Enemy = 0;                    /// Level do inimigo
-    int ataque_Enemy = level_Enemy * 2 - 2; /// Ataque do jogador
-    int defesa_Enemy = level_Enemy * 2 - 8; /// Defesa do jogador
-    int dano_Enemy = level_Enemy * 2 + 2;   /// Dano do jogador
+    int ataque_Enemy = 0; /// Ataque do jogador
+    int defesa_Enemy = 0; /// Defesa do jogador
+    int dano_Enemy = 0;   /// Dano do jogador
     //
 
     // Var
@@ -138,7 +141,8 @@ int main(){
                     defesa = level * 2 + 8;
                     dano = level * 2 + 2;
 
-                    health_Enemy = level_Enemy * 5 + 15;
+                    healthMax_Enemy = level_Enemy * 5 + 15;
+                    health_Enemy = healthMax_Enemy;
                     ataque_Enemy = level_Enemy * 2 - 2;
                     defesa_Enemy = level_Enemy * 2 + 8;
                     dano_Enemy = level_Enemy * 2 + 2;
@@ -240,9 +244,9 @@ int main(){
 
             case BATTLE:
                 textbackground(BLACK);
-
-                input = getch();
-
+                do{
+                    input = getch();
+                }while(input != '1' && input != '2');
                 switch(input){
                     case '1':
                         attackRoll = (rand()%19+1) + ataque;
@@ -258,6 +262,9 @@ int main(){
                 if(health_Enemy <= 0){scene = WORLD_MAP; level++; level_Enemy = 0;}
                 else if(health <= 0){scene = GAME_END;}
 
+                healthPct_Enemy = (int)(health_Enemy/healthMax_Enemy)*16;
+                healthPct = (int)(health/healthMax)*16;
+
                 // RENDER
                 if(!screenClearType){
                     for(int i = 0; i <= MAX_LINHA; i++){
@@ -272,8 +279,77 @@ int main(){
                 }
 
                 //ToDo Layout
+                textbackground(BLACK); textcolor(MAGENTA);
+                for(int i = 0; i <= 25; i++){
+                    gotoxy(0,i);
+                    if(i == 0 || i == 25 || i == 20){
+                        for(int k = 0; k <= 90; k++){printf("#");}
+                    }
+                    else{
+                        for(int k = 0; k <= 90; k++){
+                            if(k == 0 || k == 90 || (i > 20 && k == 60)){printf("#");}
+                            else{printf(" ");}
+                        }
+                    }
+                }
 
+                // RENDER CHARS
+                gotoxy(78,3); printf("   ,-.   ");
+                gotoxy(78,4); printf(" _(*_*)_ ");
+                gotoxy(78,5); printf("(_  o  _)");
+                gotoxy(78,6); printf("  / o \\  ");
+                gotoxy(78,7); printf(" (_/ \\_) ");
+
+                gotoxy(4,14); printf("  .-'''-.  ");
+                gotoxy(4,15); printf(" /(.) (.)\\ ");
+                gotoxy(4,16); printf(";    O    ;");
+                gotoxy(4,17); printf(" \\ }---{ / ");
+                gotoxy(4,18); printf("  '-...-'  ");
                 //
+                for(int i = 0; i < (health_Enemy/healthMax_Enemy)*16; i++){
+                    gotoxy(72+i,9);
+                    switch(i%4){
+                        case 0:
+                            printf("(");
+                            break;
+                        case 1:
+                            printf("\\");
+                            gotoxy(72+i,10);
+                            printf("\\");
+                            break;
+                        case 2:
+                            printf("/");
+                            gotoxy(72+i,10);
+                            printf("/");
+                            break;
+                        case 3:
+                            printf(")");
+                            break;
+                    }
+                }
+
+                for(int i = 0; i < healthPct; i++){
+                    gotoxy(4+i,11);
+                    switch(i%4){
+                        case 0:
+                            printf("(");
+                            break;
+                        case 1:
+                            printf("\\");
+                            gotoxy(4+i,12);
+                            printf("\\");
+                            break;
+                        case 2:
+                            printf("/");
+                            gotoxy(4+i,12);
+                            printf("/");
+                            break;
+                        case 3:
+                            printf(")");
+                            break;
+                    }
+                }
+                
                 break;
 
             case GAME_END:
@@ -310,13 +386,13 @@ int main(){
                     printf(" ENEMY-> pos:[%d,%d] ; health: %d ; velo: %d ; aggro_range: %d ; aggroed: %d ; ataque: %d, defesa: %d ; dano: %d ; level: %d ", posX_Enemy, posY_Enemy, health_Enemy, velo_Enemy, aggro_Enemy, aggroed_Enemy, ataque_Enemy, defesa_Enemy, dano_Enemy, level_Enemy);
                 }
                 else{
-                    textbackground(BLACK);
-                    for(int i = 0; i <= MAX_LINHA+1; i++){
-                        for(int k = 0; k <= MAX_COLUNA; k++){
-                            gotoxy(k, i);
-                            printf(" ");
-                        }
-                    }
+                    // textbackground(BLACK);
+                    // for(int i = MAX_LINHA+1; i <= MAX_LINHA+4; i++){
+                    //     for(int k = 0; k <= MAX_COLUNA; k++){
+                    //         gotoxy(k, i);
+                    //         printf(" ");
+                    //     }
+                    // }
                 }
                 //
     }
