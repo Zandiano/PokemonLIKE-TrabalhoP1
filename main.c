@@ -7,7 +7,6 @@
 
 
 enum scene{MENU, WORLD_MAP, BATTLE, GAME_END};
-enum battleAction{FIGHT, SWITCH, FLEE};
 
 int MAX_COLUNA = 90; /// X
 int MAX_LINHA = 25;  /// Y
@@ -33,7 +32,7 @@ int main(){
 	int velo = 2;                   /// Velocidade do jogador
     int level = 1;                  /// Level do jogador
 	int healthMax = level * 5 + 15; /// Vida maxima do jogador
-    int health = healthMax          /// Vida do jogador
+    int health = healthMax;         /// Vida do jogador
     int ataque = level * 2 - 2;     /// Ataque do jogador
     int defesa = level * 2 - 8;     /// Defesa do jogador
     int dano = level * 2 + 2;       /// Dano do jogador
@@ -63,13 +62,14 @@ int main(){
     int yDist = 0;
     int xDist = 0;
     int dist = 0;
+    int attackRoll = 0;
 
 
     while (running) {
         switch(scene){
             case MENU:
                 clrscr();
-                textbackground(BLACK); textcolor(BLACK);
+                textbackground(BLACK); textcolor(WHITE);
                 printf("#############################################################\n");
                 printf("#                                                           #\n");
                 // printf("#   \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2557  \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557   #\n");
@@ -234,29 +234,7 @@ int main(){
                     //
                 //
 
-                // Debug
-                if(debugMode){
-                    textbackground(WHITE);
-                    gotoxy(MAX_COLUNA+20, MAX_LINHA/2-3); textcolor(MAGENTA);
-                    printf(" DEBUG: ON ; INVINCIBLE: %d", invencivel);
 
-
-                    gotoxy(MAX_COLUNA+20, MAX_LINHA/2-2); textcolor(RED);
-                    printf(" PLAYER-> pos:[%d,%d] ; health: %d ; velo: %d ; input: %c ; dist: [%d, %d]-> %d ", posX,posY,health,velo,input, xDist, yDist, dist);
-
-                    gotoxy(MAX_COLUNA+20, MAX_LINHA/2); textcolor(color_Enemy);
-                    printf(" ENEMY-> pos:[%d,%d] ; health: %d ; velo: %d ; aggro_range: %d ; aggroed: %d ", posX_Enemy, posY_Enemy, health_Enemy, velo_Enemy, aggro_Enemy, aggroed_Enemy);
-                }
-                else{
-                    textbackground(BLACK);
-                    for(int i = 0; i <= MAX_LINHA/2; i++){
-                        for(int k = MAX_COLUNA+20; k <= MAX_COLUNA+105; k++){
-                            gotoxy(k, i);
-                            printf(" ");
-                        }
-                    }
-                }
-                //
                 gotoxy(MAX_COLUNA, MAX_LINHA+1);
                 break;
 
@@ -266,8 +244,14 @@ int main(){
                 input = getch();
 
                 switch(input){
-                    case 1:
-                        //
+                    case '1':
+                        attackRoll = (rand()%19+1) + ataque;
+                        if(attackRoll > defesa_Enemy){
+                            health_Enemy -= dano;
+                        }
+                        break;
+                    case '2':
+                        if(!(rand()%4)){scene = WORLD_MAP; level_Enemy = 0;}
                         break;
                 }
 
@@ -312,6 +296,29 @@ int main(){
                 Sleep(3000);
                 break;
             }
+            // Debug
+                if(debugMode){
+                    textbackground(WHITE);
+                    gotoxy(1, MAX_LINHA+2); textcolor(MAGENTA);
+                    printf(" DEBUG: ON ; INVINCIBLE: %d", invencivel);
+
+
+                    gotoxy(1, MAX_LINHA+3); textcolor(RED);
+                    printf(" PLAYER-> pos:[%d,%d] ; health: %d ; velo: %d ; input: %c ; dist: [%d, %d]-> %d \n ataque: %d ;  defesa: %d ; dano: %d ; level: %d ", posX,posY,health,velo,input, xDist, yDist, dist, ataque, defesa, dano, level);
+
+                    gotoxy(1, MAX_LINHA+4); textcolor(color_Enemy);
+                    printf(" ENEMY-> pos:[%d,%d] ; health: %d ; velo: %d ; aggro_range: %d ; aggroed: %d ; ataque: %d, defesa: %d ; dano: %d ; level: %d ", posX_Enemy, posY_Enemy, health_Enemy, velo_Enemy, aggro_Enemy, aggroed_Enemy, ataque_Enemy, defesa_Enemy, dano_Enemy, level_Enemy);
+                }
+                else{
+                    textbackground(BLACK);
+                    for(int i = 0; i <= MAX_LINHA+1; i++){
+                        for(int k = 0; k <= MAX_COLUNA; k++){
+                            gotoxy(k, i);
+                            printf(" ");
+                        }
+                    }
+                }
+                //
     }
     textbackground(BLACK);
     clrscr();
