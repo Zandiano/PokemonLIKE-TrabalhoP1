@@ -59,6 +59,8 @@ int main(){
     int ataque_Enemy = 0;               /// Ataque do inimigo
     int defesa_Enemy = 0;               /// Defesa do inimigo
     int dano_Enemy = 0;                 /// Dano do inimigo
+
+    float behaviour = 0.0f;
     //
 
     // Var
@@ -281,6 +283,9 @@ int main(){
                         if(i < 21){gotoxy(41,i+5); printf("  |||||  ");}
                         Sleep(200);
                     }
+
+                    behaviour = (level - level_Enemy)*4;
+                    
                     battleTurn++;
                     break;
                 }
@@ -303,6 +308,16 @@ int main(){
                         break;
                 }
 
+                if(rand()%11 >= behaviour){
+                    attackRoll = (rand()%19+1) + ataque_Enemy;
+                    if(attackRoll > defesa){
+                        health -= dano_Enemy;
+                    }
+                }
+                else{
+                    if(!(rand()%4)){scene = WORLD_MAP; level_Enemy = 0;}
+                }
+
                 // Post Turn
                 
                 if(health_Enemy <= 0){scene = WORLD_MAP; level++; level_Enemy = 0;}
@@ -310,6 +325,8 @@ int main(){
                 
                 heartsCounter_Enemy = (health_Enemy*1.0f/healthMax_Enemy)*16;
                 heartsCounter = (health*1.0f/healthMax)*16;
+
+                behaviour = (level-level_Enemy) * 3 + (heartsCounter_Enemy/16.0f) * 12;
                 
                 // RENDER
                 textbackground(BLACK); textcolor(MAGENTA);
