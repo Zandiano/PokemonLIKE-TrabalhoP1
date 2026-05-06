@@ -3,8 +3,6 @@
 #include <time.h>
 #include <math.h>
 #include "gconio.h"
-#include <locale.h>
-
 
 enum scene{MENU, WORLD_MAP, BATTLE, GAME_END};
 
@@ -20,8 +18,8 @@ int main(){
 	int scene = MENU;               /// Controle de cena
 	int running = 1;                /// Controle de jogo
     int screenClearType = 0;        /// Tipo de clear
-    int battleTurn = 0;
-    setlocale(LC_ALL, "Portuguese");
+    int battleTurn = 0;             /// Contador de turno batalha
+    int worldTurn = 0;              /// Contador de turno worldMap
     srand(time(NULL));
 
 
@@ -69,35 +67,45 @@ int main(){
     int xDist = 0;
     int dist = 0;
     int attackRoll = 0;
+    char logPlayer[60] = "";
+    char logEnemy[60] = "";
 
 
     while (running) {
         switch(scene){
             case MENU:
                 clrscr();
-                textbackground(BLACK); textcolor(WHITE);
-                printf("#############################################################\n");
-                printf("#                                                           #\n");
-                // printf("#   \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557   \u2588\u2588\u2557\u2588\u2588\u2557  \u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2557   \u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2588\u2588\u2557   #\n");
-                // printf("#   \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2551 \u2588\u2588\u2554\u255D\u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2554\u2550\u2550\u2550\u2588\u2588\u2557  #\n");
-                // printf("#   \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2554\u255D \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2588\u2588\u2588\u2588\u2554\u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551  #\n");
-                // printf("#   \u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2588\u2588\u2588\u2554\u255D \u2588\u2588\u2551   \u2588\u2588\u2551\u2588\u2588\u2554\u2588\u2588\u2588\u2588\u2554\u2588\u2588\u2551\u2588\u2588\u2551   \u2588\u2588\u2551  #\n");
-                // printf("#   \u2588\u2588\u2551     \u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551  \u2588\u2588\u2557\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D\u2588\u2588\u2551 \u255A\u2550\u255D \u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D  #\n");
-                // printf("#   \u255A\u2550\u255D      \u255A\u2550\u2550\u2550\u2550\u2550\u255D \u255A\u2550\u255D  \u255A\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u255D \u255A\u2550\u255D     \u255A\u2550\u255D \u255A\u2550\u2550\u2550\u2550\u2550\u255D   #\n");
-                //printf("#                                                           #\n");
-                printf("#                  >>>  P U K O M O  <<<                    #\n");
-                printf("#                                                           #\n");
-                printf("############################################################\n\n");
+                textbackground(BLACK); textcolor(MAGENTA);
+                printf("+========================================================================================+");
+                printf("        *     +                                         .                                 \n");
+                printf("'    '           *         TRABALHO PROGRAMACAO 1 - RAPHAEL              *                \n");
+                printf("             .        '  .               +       +           +                            \n");
+                printf("                                    o                                          .          \n");
+                printf("                        .-'""'-.                                                          \n");
+                printf("                      .' () .   '.   .          .                                         \n");
+                printf("                     / .      o   \\                              o                      . \n");
+                printf("    .               ; o    _   ()  ;                                                      \n");
+                printf("            o o   . ;     (_)      ;  +                  '    .                     .:'   \n");
+                printf("                     \\ .        o /                                 +           _.::'     \n");
+                printf("                      '.  O  .  .'                        .            '     + (_.'      +\n");
+                printf("                  .     '-....-'             .  .                '                        \n");
+                printf("    |     + ' .                       *                     +            .       + .      \n");
+                printf("  --o--                    +============================+          +                 .    \n");
+                printf("    |   '         '        | 1.START                    |   +   o                         \n");
+                printf("                           | 2.EXIT        +           .:'                                \n");
+                printf("        +                  +=======================_.::=+                 .      *       .\n");
+                printf("          '                      - o -            (_.'                +                   \n");
+                printf("             o  . ' +       '      |   o                      .          +                \n");
+                printf("                                         +                                         .  +   \n");
+                printf("                         '                    +                                           \n");
+                printf("                   o               .  +         .                                     .   \n");
+                printf("                 +    +  o                                      .            *    +       \n");
+                printf("+========================================================================================+");
 
-                printf("          #########################################\n");
-                printf("          #                                       #\n");
-                printf("          #   EU VOU TRANCAR ESSA PORRA           #\n");
-                printf("          #                                       #\n");
-                printf("          #########################################\n\n");
-
-                printf("                [1] INICIAR JOGO\n");
-                printf("                [2] OPCOES\n");
-                printf("                [3] SAIR\n\n");
+                for(int i = 1; i < MAX_LINHA-2; i++){
+                    gotoxy(0,i); printf("|");
+                    gotoxy(MAX_COLUNA-1,i); printf("|");
+                }
 
                 input = getch();
 
@@ -113,8 +121,6 @@ int main(){
                         scene = WORLD_MAP;
                         break;
                     case '2':
-                        break;
-                    case '3':
                         clrscr();
                         gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2);
                         printf(";(");
@@ -127,29 +133,27 @@ int main(){
 
 
             case WORLD_MAP:
-                textbackground(GREEN);
+                textbackground(MAGENTA);
 
                 if(!level_Enemy){
-
-                    if(!screenClearType){
-                        for(int i = 0; i <= MAX_LINHA; i++){
-                            gotoxy(0, i);
-                            for(int k = 0; k <= MAX_COLUNA; k++){
-                                printf(" ");
-                            }
-                        }
-                    }
-                    else{
-                        clrscr();
-                    }
+                    worldTurn = 0;
+                    battleTurn = 0;
+                    // if(!screenClearType){
+                    //     for(int i = 0; i <= MAX_LINHA; i++){
+                    //         gotoxy(0, i);
+                    //         for(int k = 0; k <= MAX_COLUNA; k++){
+                    //             printf(" ");
+                    //         }
+                    //     }
+                    // }
+                    // else{
+                    //     clrscr();
+                    // }
 
                     level_Enemy = rand()%3+level-1;
 
                     posX_Enemy = rand()%MAX_COLUNA;
                     posY_Enemy = rand()%MAX_LINHA;
-
-                    posX = rand()%MAX_COLUNA;
-                    posY = rand()%MAX_LINHA;
 
                     healthMax = level * 5 + 15;
                     health = healthMax;
@@ -163,69 +167,75 @@ int main(){
                     defesa_Enemy = level_Enemy * 2 + 8;
                     dano_Enemy = level_Enemy * 2 + 2;
                 }
+                else{
 
-                // Logica player
-                input = getch();
-
-                switch(input){
-                    case 'w':
-                    case 'W':
-                        posY -= velo;
-                        break;
-                    case 's':
-                    case 'S':
-                        posY += velo;
-                        break;
-                    case 'a':
-                    case 'A':
-                        posX -= velo;
-                        break;
-                    case 'd':
-                    case 'D':
-                        posX += velo;
-                        break;
-                    case 'o':
-                        if(invencivel){invencivel = 0;}
-                        else{invencivel = 1;}
-                        break;
-                    case 'p':
-                        if(debugMode){debugMode = 0;}
-                        else{debugMode = 1;}
-                        break;
-                }
-
-                if      (posX <= 0)           {posX = 0;}
-                else if (posX >= MAX_COLUNA)  {posX = MAX_COLUNA;}
-                if      (posY <= 0)           {posY = 0;}
-                else if (posY >= MAX_LINHA)   {posY = MAX_LINHA;}
-
-
-                // Logica enemy
-                xDist = posX - posX_Enemy;
-                yDist = posY - posY_Enemy;
-                dist = sqrt(pow(xDist, 2) + pow(yDist, 2)); /// Distancia entre o jogador e o inimigo
-
-                if(dist > aggro_Enemy){             /// Fora da range
-                    posX_Enemy += (rand() % 3 - 1) * velo_Enemy;
-                    posY_Enemy += (rand() % 3 - 1) * velo_Enemy;
-                    color_Enemy = BLACK;
-                    aggroed_Enemy = 0;
-                }
-                else if(dist > velo_Enemy){         /// Dentro da range
-                    if(xDist != 0){
-                        posX_Enemy += (xDist / abs(xDist)) * velo_Enemy;
+                    // Logica player
+                    input = getch();
+    
+                    switch(input){
+                        case 'w':
+                        case 'W':
+                            posY -= velo;
+                            break;
+                        case 's':
+                        case 'S':
+                            posY += velo;
+                            break;
+                        case 'a':
+                        case 'A':
+                            posX -= velo;
+                            break;
+                        case 'd':
+                        case 'D':
+                            posX += velo;
+                            break;
+                        case 'o':
+                            if(invencivel){invencivel = 0;}
+                            else{invencivel = 1;}
+                            break;
+                        case 'p':
+                            if(debugMode){debugMode = 0;}
+                            else{debugMode = 1;}
+                            break;
                     }
-                    if(yDist != 0){
-                        posY_Enemy += (yDist / abs(yDist)) * velo_Enemy;
+    
+                    if      (posX <= 0)           {posX = 0;}
+                    else if (posX >= MAX_COLUNA)  {posX = MAX_COLUNA;}
+                    if      (posY <= 0)           {posY = 0;}
+                    else if (posY >= MAX_LINHA)   {posY = MAX_LINHA;}
+    
+    
+                    // Logica enemy
+                    xDist = posX - posX_Enemy;
+                    yDist = posY - posY_Enemy;
+                    dist = sqrt(pow(xDist, 2) + pow(yDist, 2)); /// Distancia entre o jogador e o inimigo
+    
+                    if(dist > aggro_Enemy){             /// Fora da range
+                        posX_Enemy += (rand() % 3 - 1) * velo_Enemy;
+                        posY_Enemy += (rand() % 3 - 1) * velo_Enemy;
+                        color_Enemy = YELLOW;
+                        aggroed_Enemy = 0;
                     }
-                    color_Enemy = RED;
-                    aggroed_Enemy = 1;
+                    else if(dist > velo_Enemy){         /// Dentro da range
+                        if(xDist != 0){
+                            posX_Enemy += (xDist / abs(xDist)) * velo_Enemy;
+                        }
+                        if(yDist != 0){
+                            posY_Enemy += (yDist / abs(yDist)) * velo_Enemy;
+                        }
+                        color_Enemy = CYAN;
+                        aggroed_Enemy = 1;
+                    }
+                    else if(!invencivel){              /// Encostou no jogador
+                        color_Enemy = WHITE;
+                        scene = BATTLE;
+                        Sleep(200);
+                    }
                 }
-                else if(!invencivel){                               /// Encostou no jogador
-                    color_Enemy = MAGENTA;
-                    scene = BATTLE;
-                    Sleep(500);
-                }
+
+                worldTurn++;
+
+                if(worldTurn > 99){level_Enemy = 0;}
 
                 if      (posX_Enemy <= 0)           {posX_Enemy = 0;}
                 else if (posX_Enemy >= MAX_COLUNA)  {posX_Enemy = MAX_COLUNA;}
@@ -249,7 +259,7 @@ int main(){
 
                     gotoxy(MAX_COLUNA,MAX_LINHA); textcolor(level+2); printf("%d", level);
                     // RENDER Entidades
-                    gotoxy(posX, posY); textcolor(LIGHTRED); printf("@");
+                    gotoxy(posX, posY); textcolor(YELLOW); printf("@");
                     gotoxy(posX_Enemy, posY_Enemy); textcolor(color_Enemy); printf("%d", level_Enemy);
                     //
                 //
@@ -261,7 +271,7 @@ int main(){
             case BATTLE:
                 // Pre Turn
                 if(!battleTurn){
-                    textbackground(RED); textcolor(RED);
+                    textbackground(MAGENTA); textcolor(CYAN);
                     if(!screenClearType){
                         for(int i = 0; i <= MAX_LINHA; i++){
                             gotoxy(0, i);
@@ -273,7 +283,7 @@ int main(){
                     else{
                         clrscr();
                     }
-                    for(int i = 0; i < 25; i++){
+                    for(int i = 0; i < 26; i++){
                         if(i > 0 ){gotoxy(41,i-1); printf("         ");}
                         if(i < 26){gotoxy(41,i+0); printf("  _____  ");}
                         if(i < 25){gotoxy(41,i+1); printf(" /     \\ ");}
@@ -281,52 +291,70 @@ int main(){
                         if(i < 23){gotoxy(41,i+3); printf(" \\  ^  / ");}
                         if(i < 22){gotoxy(41,i+4); printf("  |||||  ");}
                         if(i < 21){gotoxy(41,i+5); printf("  |||||  ");}
-                        Sleep(200);
+                        Sleep(150);
                     }
 
                     behaviour = (level - level_Enemy)*4;
+                    strcpy(logPlayer,""); strcpy(logEnemy, "");
                     
                     battleTurn++;
-                    break;
-                }
-
-                // In Turn
-                
-                do{
-                    input = getch();
-                }while(input != '1' && input != '2');
-
-                switch(input){
-                    case '1':
-                        attackRoll = (rand()%19+1) + ataque;
-                        if(attackRoll > defesa_Enemy){
-                            health_Enemy -= dano;
-                        }
-                        break;
-                    case '2':
-                        if(!(rand()%4)){scene = WORLD_MAP; level_Enemy = 0;}
-                        break;
-                }
-
-                if(rand()%11 >= behaviour){
-                    attackRoll = (rand()%19+1) + ataque_Enemy;
-                    if(attackRoll > defesa){
-                        health -= dano_Enemy;
-                    }
                 }
                 else{
-                    if(!(rand()%4)){scene = WORLD_MAP; level_Enemy = 0;}
+
+                    // In Turn
+                    
+                    do{
+                        input = getch();
+                    }while(input != '1' && input != '2');
+    
+                    switch(input){
+                        case '1':
+                            attackRoll = (rand()%19+1) + ataque;
+                            if(attackRoll > defesa_Enemy){
+                                health_Enemy -= dano;
+                                strcpy(logPlayer, "O jogador acertou o inimigo, causando %d de dano");
+                            }
+                            else{strcpy(logPlayer, "O jogador tentou acertar o inimigo mas errou");}
+                            break;
+                        case '2':
+                            if(!(rand()%4)){
+                                scene = WORLD_MAP;
+                                level_Enemy = 0;
+                                strcpy(logPlayer, "O jogador fugiu da batalha");
+                            }
+                            else{strcpy(logPlayer, "O jogador tentou fugir da batalha mas nao conseguiu");}
+                            break;
+                    }
+    
+                    if(rand()%11 >= behaviour){
+                        attackRoll = (rand()%19+1) + ataque_Enemy;
+                        if(attackRoll > defesa){
+                            health -= dano_Enemy;
+                            strcpy(logEnemy, "O inimigo acertou o jogador, causando %d de dano");
+                        }
+                        else{strcpy(logEnemy, "O inimigo tentou acertar o jogador mas errou");}
+                    }
+                    else{
+                        if(!(rand()%10)){
+                            scene = WORLD_MAP;
+                            posX_Enemy = rand()%MAX_COLUNA;
+                            posY_Enemy = rand()%MAX_LINHA;
+                            worldTurn = 0;
+                            strcpy(logEnemy, "O inimigo fugiu da batalha");
+                        }
+                        else{strcpy(logEnemy, "O inimigo tentou fugir da batalha mas nao conseguiu");}
+                    }
+
+                    // Post Turn
+                    
+                    if(health_Enemy <= 0){scene = WORLD_MAP; level++; level_Enemy = 0;}
+                    else if(health <= 0){scene = GAME_END;}
+                    
+                    heartsCounter_Enemy = (health_Enemy*1.0f/healthMax_Enemy)*16;
+                    heartsCounter = (health*1.0f/healthMax)*16;
+    
+                    behaviour = (level-level_Enemy) * 3 + (heartsCounter_Enemy/16.0f) * 12;
                 }
-
-                // Post Turn
-                
-                if(health_Enemy <= 0){scene = WORLD_MAP; level++; level_Enemy = 0;}
-                else if(health <= 0){scene = GAME_END;}
-                
-                heartsCounter_Enemy = (health_Enemy*1.0f/healthMax_Enemy)*16;
-                heartsCounter = (health*1.0f/healthMax)*16;
-
-                behaviour = (level-level_Enemy) * 3 + (heartsCounter_Enemy/16.0f) * 12;
                 
                 // RENDER
                 textbackground(BLACK); textcolor(MAGENTA);
@@ -342,14 +370,14 @@ int main(){
                     clrscr();
                 }
                 
-                for(int i = 0; i <= 25; i++){
+                for(int i = 0; i <= MAX_LINHA; i++){
                     gotoxy(0,i);
-                    if(i == 0 || i == 25 || i == 20){
-                        for(int k = 0; k <= 90; k++){printf("#");}
+                    if(i == 0 || i == MAX_LINHA || i == 20){
+                        for(int k = 0; k <= MAX_COLUNA; k++){printf("#");}
                     }
                     else{
-                        for(int k = 0; k <= 90; k++){
-                            if(k == 0 || k == 90 || (i > 20 && k == 60)){printf("#");}
+                        for(int k = 0; k <= MAX_COLUNA; k++){
+                            if(k == 0 || k == MAX_COLUNA || (i > 20 && k == 60)){printf("#");}
                             else{printf(" ");}
                         }
                     }
@@ -412,12 +440,15 @@ int main(){
                     }
                 }
 
-                gotoxy(2,2); printf("%d° Turno", battleTurn);
+                gotoxy(4,MAX_LINHA-2); printf(logEnemy, dano_Enemy);
+                gotoxy(4,MAX_LINHA-3); printf(logPlayer, dano);
+
+                gotoxy(2,2); printf("Turno %d", battleTurn);
                 battleTurn++;
                 break;
 
             case GAME_END:
-                textbackground(RED);
+                textbackground(MAGENTA);
                 if(!screenClearType){
                     for(int i = 0; i <= MAX_LINHA; i++){
                         gotoxy(0, i);
@@ -429,8 +460,7 @@ int main(){
                 else{
                     clrscr();
                 }
-                gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); textcolor(BLACK); printf("GAME OVER");
-                textcolor(BLACK);
+                gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); textcolor(CYAN); printf("GAME OVER");
                 scanf("");
                 running = 0;
                 Sleep(3000);
@@ -463,6 +493,8 @@ int main(){
             //
     }
     textbackground(BLACK);
+    textcolor(BLACK);
+
     clrscr();
     return 0;
 }
