@@ -91,8 +91,8 @@ int main(){
                 printf("                  .     '-....-'             .  .                '                        \n");
                 printf("    |     + ' .                       *                     +            .       + .      \n");
                 printf("  --o--                    +============================+          +                 .    \n");
-                printf("    |   '         '        | 1.START                    |   +   o                         \n");
-                printf("                           | 2.EXIT        +           .:'                                \n");
+                printf("    |   '         '        | 1.INICIAR                  |   +   o                         \n");
+                printf("                           | 2.SAIR        +           .:'                                \n");
                 printf("        +                  +=======================_.::=+                 .      *       .\n");
                 printf("          '                      - o -            (_.'                +                   \n");
                 printf("             o  . ' +       '      |   o                      .          +                \n");
@@ -300,9 +300,7 @@ int main(){
                     battleTurn++;
                 }
                 else{
-
                     // In Turn
-                    
                     do{
                         input = getch();
                     }while(input != '1' && input != '2');
@@ -339,7 +337,7 @@ int main(){
                             scene = WORLD_MAP;
                             posX_Enemy = rand()%MAX_COLUNA;
                             posY_Enemy = rand()%MAX_LINHA;
-                            worldTurn = 0;
+                            worldTurn = 0; battleTurn = 0;
                             strcpy(logEnemy, "O inimigo fugiu da batalha");
                         }
                         else{strcpy(logEnemy, "O inimigo tentou fugir da batalha mas nao conseguiu");}
@@ -442,6 +440,8 @@ int main(){
 
                 gotoxy(4,MAX_LINHA-2); printf(logEnemy, dano_Enemy);
                 gotoxy(4,MAX_LINHA-3); printf(logPlayer, dano);
+                gotoxy(65,MAX_LINHA-3); printf("1. ATACAR");
+                gotoxy(65,MAX_LINHA-2); printf("2. FUGIR");
 
                 gotoxy(2,2); printf("Turno %d", battleTurn);
                 battleTurn++;
@@ -460,8 +460,8 @@ int main(){
                 else{
                     clrscr();
                 }
-                gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); textcolor(CYAN); printf("GAME OVER");
-                scanf("");
+                gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); textcolor(CYAN); printf("PERDEU MANE");
+                getch();
                 running = 0;
                 Sleep(3000);
                 break;
@@ -478,7 +478,7 @@ int main(){
                     , posX, posY, health, healthMax, heartsCounter,velo,input, xDist, yDist, dist, ataque, defesa, dano, level);
 
                 gotoxy(1, MAX_LINHA+4); textcolor(color_Enemy);
-                printf(" ENEMY-> pos:[%d,%d] ; health: %d/%d (%dd) ; velo: %d ; aggro_range: %d ; aggroed: %d ; ataque: %d, defesa: %d ; dano: %d ; level: %d "
+                printf(" ENEMY-> pos:[%d,%d] ; health: %d/%d (%d) ; velo: %d ; aggro_range: %d ; aggroed: %d ; ataque: %d, defesa: %d ; dano: %d ; level: %d "
                     , posX_Enemy, posY_Enemy, health_Enemy, healthMax_Enemy, heartsCounter_Enemy, velo_Enemy, aggro_Enemy, aggroed_Enemy, ataque_Enemy, defesa_Enemy, dano_Enemy, level_Enemy);
             }
             else{
