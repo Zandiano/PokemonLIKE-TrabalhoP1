@@ -4,10 +4,10 @@
 #include <math.h>
 #include "gconio.h"
 
-enum scene{MENU, WORLD_MAP, BATTLE, GAME_END};
-
 int MAX_COLUNA = 90; /// X
 int MAX_LINHA = 25;  /// Y
+
+enum cena{MENU,WORLD_MAP,BATTLE,GAME_END};
 
 int main(){
     // Dev Wise
@@ -20,9 +20,8 @@ int main(){
     int screenClearType = 0;        /// Tipo de clear
     int battleTurn = 0;             /// Contador de turno batalha
     int worldTurn = 0;              /// Contador de turno worldMap
+    int backgroundType = BLACK;     /// Cor do background de algumas cenas
     srand(time(NULL));
-
-
 
     // JOGADOR
     int posX = 45;                  /// Posi��o X do jogador
@@ -36,7 +35,6 @@ int main(){
     int ataque = 0;                 /// Ataque do jogador
     int defesa = 0;                 /// Defesa do jogador
     int dano = 0;                   /// Dano do jogador
-
     //
 
     // ENEMY
@@ -70,8 +68,39 @@ int main(){
     char logPlayer[60] = "";
     char logEnemy[60] = "";
 
+    // Scores
+    int walkedDistance = 0;
+    int enemiesKilled = 0;
+    int closestToDeath = 16;
 
     while (running) {
+
+        // Debug
+        if(debugMode){
+            textbackground(WHITE);
+            gotoxy(1, MAX_LINHA+2); textcolor(MAGENTA);
+            printf(" DEBUG: ON ; INVINCIBLE: %d", invencivel);
+
+
+            gotoxy(1, MAX_LINHA+3); textcolor(RED);
+            printf(" PLAYER-> pos:[%d,%d] ; health: %d/%d (%d) ; velo: %d ; input: %c ; dist: [%d, %d]-> %d ; ataque: %d ;  defesa: %d ; dano: %d ; level: %d "
+                , posX, posY, health, healthMax, heartsCounter,velo,input, xDist, yDist, dist, ataque, defesa, dano, level);
+
+            gotoxy(1, MAX_LINHA+4); textcolor(color_Enemy);
+            printf(" ENEMY-> pos:[%d,%d] ; health: %d/%d (%d) ; velo: %d ; aggro_range: %d ; aggroed: %d ; ataque: %d, defesa: %d ; dano: %d ; level: %d "
+                , posX_Enemy, posY_Enemy, health_Enemy, healthMax_Enemy, heartsCounter_Enemy, velo_Enemy, aggro_Enemy, aggroed_Enemy, ataque_Enemy, defesa_Enemy, dano_Enemy, level_Enemy);
+        }
+        else{
+            textbackground(BLACK);
+            for(int i = MAX_LINHA+1; i <= MAX_LINHA+4; i++){
+                for(int k = 0; k <= MAX_COLUNA; k++){
+                    gotoxy(k, i);
+                    printf(" ");
+                }
+            }
+        }
+        //
+
         switch(scene){
             case MENU:
                 clrscr();
@@ -99,7 +128,7 @@ int main(){
                 printf("                                         +                                         .  +   \n");
                 printf("                         '                    +                                           \n");
                 printf("                   o               .  +         .                                     .   \n");
-                printf("                 +    +  o                                      .            *    +       \n");
+                printf("ZANDIADEV        +    +  o                                      .            *    +       \n");
                 printf("+========================================================================================+");
 
                 for(int i = 1; i < MAX_LINHA-2; i++){
@@ -133,23 +162,12 @@ int main(){
 
 
             case WORLD_MAP:
-                textbackground(MAGENTA);
+                textbackground(backgroundType);
 
                 if(!level_Enemy){
                     worldTurn = 0;
                     battleTurn = 0;
-                    // if(!screenClearType){
-                    //     for(int i = 0; i <= MAX_LINHA; i++){
-                    //         gotoxy(0, i);
-                    //         for(int k = 0; k <= MAX_COLUNA; k++){
-                    //             printf(" ");
-                    //         }
-                    //     }
-                    // }
-                    // else{
-                    //     clrscr();
-                    // }
-
+                    
                     level_Enemy = rand()%3+level-1;
 
                     posX_Enemy = rand()%MAX_COLUNA;
@@ -176,27 +194,34 @@ int main(){
                         case 'w':
                         case 'W':
                             posY -= velo;
+                            walkedDistance++;
                             break;
                         case 's':
                         case 'S':
                             posY += velo;
+                            walkedDistance++;
                             break;
                         case 'a':
                         case 'A':
                             posX -= velo;
+                            walkedDistance++;
                             break;
                         case 'd':
                         case 'D':
                             posX += velo;
+                            walkedDistance++;
                             break;
-                        case 'o':
-                            if(invencivel){invencivel = 0;}
-                            else{invencivel = 1;}
-                            break;
-                        case 'p':
-                            if(debugMode){debugMode = 0;}
-                            else{debugMode = 1;}
-                            break;
+                    }
+                        
+                    switch(input){
+                    case 'o':
+                        if(invencivel){invencivel = 0;}
+                        else{invencivel = 1;}
+                        break;
+                    case 'p':
+                        if(debugMode){debugMode = 0;}
+                        else{debugMode = 1;}
+                        break;
                     }
     
                     if      (posX <= 0)           {posX = 0;}
@@ -243,11 +268,13 @@ int main(){
                 else if (posY_Enemy >= MAX_LINHA)   {posY_Enemy = MAX_LINHA;}
 
                 // RENDER
+                textcolor(MAGENTA);
                 if(!screenClearType){
                     for(int i = 0; i <= MAX_LINHA; i++){
                         gotoxy(0, i);
                         for(int k = 0; k <= MAX_COLUNA; k++){
-                            printf(" ");
+                            if(k == 0 || k == MAX_COLUNA){printf("|");}
+                            else{printf(" ");}
                         }
                     }
                 }
@@ -271,7 +298,7 @@ int main(){
             case BATTLE:
                 // Pre Turn
                 if(!battleTurn){
-                    textbackground(MAGENTA); textcolor(CYAN);
+                    textbackground(backgroundType); textcolor(CYAN);
                     if(!screenClearType){
                         for(int i = 0; i <= MAX_LINHA; i++){
                             gotoxy(0, i);
@@ -283,7 +310,7 @@ int main(){
                     else{
                         clrscr();
                     }
-                    for(int i = 0; i < 26; i++){
+                    for(int i = 0; i <= 26; i++){
                         if(i > 0 ){gotoxy(41,i-1); printf("         ");}
                         if(i < 26){gotoxy(41,i+0); printf("  _____  ");}
                         if(i < 25){gotoxy(41,i+1); printf(" /     \\ ");}
@@ -345,7 +372,13 @@ int main(){
 
                     // Post Turn
                     
-                    if(health_Enemy <= 0){scene = WORLD_MAP; level++; level_Enemy = 0;}
+                    if(health_Enemy <= 0){
+                        scene = WORLD_MAP;
+                        level++;
+                        enemiesKilled++;
+                        closestToDeath = min(closestToDeath,heartsCounter);
+                        level_Enemy = 0;
+                    }
                     else if(health <= 0){scene = GAME_END;}
                     
                     heartsCounter_Enemy = (health_Enemy*1.0f/healthMax_Enemy)*16;
@@ -355,41 +388,55 @@ int main(){
                 }
                 
                 // RENDER
-                textbackground(BLACK); textcolor(MAGENTA);
-                if(!screenClearType){
-                    for(int i = 0; i <= MAX_LINHA; i++){
-                        gotoxy(0, i);
-                        for(int k = 0; k <= MAX_COLUNA; k++){
-                            printf(" ");
-                        }
-                    }
-                }
-                else{
-                    clrscr();
-                }
-                
+                textbackground(BLACK); textcolor(MAGENTA);                
                 for(int i = 0; i <= MAX_LINHA; i++){
                     gotoxy(0,i);
                     if(i == 0 || i == MAX_LINHA || i == 20){
-                        for(int k = 0; k <= MAX_COLUNA; k++){printf("#");}
+                        for(int k = 0; k <= MAX_COLUNA; k++){printf("=");}
                     }
                     else{
                         for(int k = 0; k <= MAX_COLUNA; k++){
-                            if(k == 0 || k == MAX_COLUNA || (i > 20 && k == 60)){printf("#");}
+                            if(k == 0 || k == MAX_COLUNA || (i > 20 && k == 60)){printf("|");}
                             else{printf(" ");}
                         }
                     }
                 }
-                
+
+                gotoxy(0,0); printf("+");
+                gotoxy(0,20); printf("+");
+                gotoxy(0,MAX_LINHA); printf("+");
+                gotoxy(MAX_COLUNA,0); printf("+");
+                gotoxy(MAX_COLUNA,20); printf("+");
+                gotoxy(MAX_COLUNA,MAX_LINHA); printf("+");
+                gotoxy(60,20); printf("+");
+                gotoxy(60,MAX_LINHA); printf("+");
                 // RENDER CHARS
                 gotoxy(78,2); printf("   ,-.   ");
-                gotoxy(78,3); printf(" _(*_*)_ ");
+                gotoxy(78,3);
+                if(heartsCounter_Enemy>12){
+                    printf(" _(-_-)_ ");
+                }
+                else if(heartsCounter_Enemy>8){
+                    printf(" _(O_O)_ ");
+                }
+                else{
+                    printf(" _(*_*)_ ");
+                }
                 gotoxy(78,4); printf("(_  o  _)");
                 gotoxy(78,5); printf("  / o \\  ");
                 gotoxy(78,6); printf(" (_/ \\_) ");
                 
                 gotoxy(4,14); printf("  .-'''-.  ");
-                gotoxy(4,15); printf(" /(.) (.)\\ ");
+                gotoxy(4,15);
+                if(heartsCounter>12){
+                    printf(" /(.) (.)\\ ");
+                }
+                else if(heartsCounter>8){
+                    printf(" /(O) (O)\\");
+                }
+                else{
+                    printf(" /(X) (X)\\");
+                }
                 gotoxy(4,16); printf(";    O    ;");
                 gotoxy(4,17); printf(" \\ }---{ / ");
                 gotoxy(4,18); printf("  '-...-'  ");
@@ -448,7 +495,7 @@ int main(){
                 break;
 
             case GAME_END:
-                textbackground(MAGENTA);
+                textbackground(backgroundType);
                 if(!screenClearType){
                     for(int i = 0; i <= MAX_LINHA; i++){
                         gotoxy(0, i);
@@ -460,37 +507,17 @@ int main(){
                 else{
                     clrscr();
                 }
-                gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); textcolor(CYAN); printf("PERDEU MANE");
+                textcolor(CYAN);
+                gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); printf("PERDEU MANE");
+                gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+2); printf("Voce andou %d caracteres de distancia", walkedDistance);
+                gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+4); printf("Voce matou %d inimigo(s)", enemiesKilled);
+                gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+6); printf("Em sua batalha mais dificil voce ficou com %d coracoes de vida", closestToDeath);
                 getch();
                 running = 0;
                 Sleep(3000);
                 break;
             }
-            // Debug
-            if(debugMode){
-                textbackground(WHITE);
-                gotoxy(1, MAX_LINHA+2); textcolor(MAGENTA);
-                printf(" DEBUG: ON ; INVINCIBLE: %d", invencivel);
 
-
-                gotoxy(1, MAX_LINHA+3); textcolor(RED);
-                printf(" PLAYER-> pos:[%d,%d] ; health: %d/%d (%d) ; velo: %d ; input: %c ; dist: [%d, %d]-> %d ; ataque: %d ;  defesa: %d ; dano: %d ; level: %d "
-                    , posX, posY, health, healthMax, heartsCounter,velo,input, xDist, yDist, dist, ataque, defesa, dano, level);
-
-                gotoxy(1, MAX_LINHA+4); textcolor(color_Enemy);
-                printf(" ENEMY-> pos:[%d,%d] ; health: %d/%d (%d) ; velo: %d ; aggro_range: %d ; aggroed: %d ; ataque: %d, defesa: %d ; dano: %d ; level: %d "
-                    , posX_Enemy, posY_Enemy, health_Enemy, healthMax_Enemy, heartsCounter_Enemy, velo_Enemy, aggro_Enemy, aggroed_Enemy, ataque_Enemy, defesa_Enemy, dano_Enemy, level_Enemy);
-            }
-            else{
-                // textbackground(BLACK);
-                // for(int i = MAX_LINHA+1; i <= MAX_LINHA+4; i++){
-                //     for(int k = 0; k <= MAX_COLUNA; k++){
-                //         gotoxy(k, i);
-                //         printf(" ");
-                //     }
-                // }
-            }
-            //
     }
     textbackground(BLACK);
     textcolor(BLACK);
