@@ -5,9 +5,13 @@ Um rpg de turno baseado nos primeiros jogos de final fantasy e pokemon, com o us
 
 ## Bibliotecas-
 gconio.h 
+
 stdio.h 
+
 stdlib.h 
+
 math.h 
+
 time.h 
 
 ## Autores-
@@ -17,9 +21,9 @@ Guilherme Anthony dos Santos - guilhermeanthonybq@gmail.com
 
 Iury Fernando Azevedo de Souza - iurydebel@gmail.com
 
-Yuri
+Yuri Silva Santos - yuri.3456.y@gmail.com
 
-Deividy
+José Deividy Santos Sousa - josedeividy2019@gmail.com
 
 ### Agradecimentos-
-Victor "Alien" Wembanyama
+Victor "The Alien" Wembanyama
