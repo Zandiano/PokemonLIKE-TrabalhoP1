@@ -128,7 +128,7 @@ int main(){
                 printf("                                         +                                         .  +   \n");
                 printf("                         '                    +                                           \n");
                 printf("                   o               .  +         .                                     .   \n");
-                printf("ZANDIADEV        +    +  o                                      .            *    +       \n");
+                printf(" ZANDIADEV       +    +  o                                      .            *    +       \n");
                 printf("+========================================================================================+");
 
                 for(int i = 1; i < MAX_LINHA-2; i++){
