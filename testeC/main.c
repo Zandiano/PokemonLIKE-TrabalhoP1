@@ -105,16 +105,16 @@ int main(){
             case MENU:
                 clrscr();
                 textbackground(BLACK); textcolor(MAGENTA);
-                printf("+========================================================================================+");
-                printf("        *     +                                         .                                 \n");
-                printf("'    '           *         TRABALHO PROGRAMACAO 1 - RAPHAEL              *                \n");
+                printf("+========================================================================================+\n");
+                printf("        *     +            TRABALHO PROGRAMACAO 1 - RAPHAEL                    +          \n");
+                printf("'    '           *               .              o                         *               \n");
                 printf("             .        '  .               +       +           +                            \n");
-                printf("                                    o                                          .          \n");
-                printf("                        .-'""'-.                                                          \n");
-                printf("                      .' () .   '.   .          .                                         \n");
-                printf("                     / .      o   \\                              o                      . \n");
-                printf("    .               ; o    _   ()  ;                                                      \n");
-                printf("            o o   . ;     (_)      ;  +                  '    .                     .:'   \n");
+                printf("                                    o         ___ _____        ___          ___    __     \n");
+                printf("                        .-''''-.             / _ \\\\_   \\/\\ /\\ /___\\/\\/\\    /___\\/\\ \\ \\    \n");
+                printf("                      .' () .   '.   .      / /_)/ / /\\/ //_///  //    \\  //  //  \\/ /    \n");
+                printf("                     / .      o   \\        / ___/\\/ /_/ __ \\/ \\_// /\\/\\ \\/ \\_// /\\  /   . \n");
+                printf("    .               ; o    _   ()  ;       \\/   \\____/\\/  \\/\\___/\\/    \\/\\___/\\_\\ \\/     \n");
+                printf("            o o   . ;     (_)      ;  +    turn-based rpg    .                     .:'   \n");
                 printf("                     \\ .        o /                                 +           _.::'     \n");
                 printf("                      '.  O  .  .'                        .            '     + (_.'      +\n");
                 printf("                  .     '-....-'             .  .                '                        \n");
@@ -131,7 +131,7 @@ int main(){
                 printf(" ZANDIADEV       +    +  o                                      .            *    +       \n");
                 printf("+========================================================================================+");
 
-                for(int i = 1; i < MAX_LINHA-2; i++){
+                for(int i = 1; i < MAX_LINHA-1; i++){
                     gotoxy(0,i); printf("|");
                     gotoxy(MAX_COLUNA-1,i); printf("|");
                 }
@@ -384,7 +384,7 @@ int main(){
                     heartsCounter_Enemy = (health_Enemy*1.0f/healthMax_Enemy)*16;
                     heartsCounter = (health*1.0f/healthMax)*16;
     
-                    behaviour = (level-level_Enemy) * 3 + (heartsCounter_Enemy/16.0f) * 12;
+                    behaviour = min((level-level_Enemy) * 3 + (16.0f/heartsCounter_Enemy) * 2, 9);
                 }
                 
                 // RENDER
