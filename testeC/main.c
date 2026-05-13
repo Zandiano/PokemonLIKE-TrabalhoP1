@@ -4,77 +4,106 @@
 #include <math.h>
 #include "gconio.h"
 
-int MAX_COLUNA = 90; /// X
-int MAX_LINHA = 25;  /// Y
+#define MAX_COLUNA 90 /// X
+#define MAX_LINHA 25  /// Y
+
+#define listSize(lista) sizeof(lista)/sizeof(lista[0])
+#define hearts(health) (health.current/health.max*1.0f)*16
+
+struct cords{int x; int y;}; // 8 Bytes
+struct resource{int current; int max;}; // 8 Bytes
+struct atributes{int speed; int defense; int attack; int charm;}; // 16 Bytes
+struct ability{char name[12]; int damage; int cost;}; // 20 Bytes
+struct aggro{int range; int aggroed;}; // 8 Bytes
+
+
+struct monster{ // 176 Bytes
+    char name[24]; // 24 Bytes
+    int level; // 4 Bytes
+    struct cords position; // 8 Bytes
+    int velocity; // 4 Bytes
+    struct resource health; // 8 Bytes
+    struct atributes atributes; // 16 Bytes
+    struct ability abilities[4]; // 80 Bytes
+    struct resource stamina; // 8 Bytes
+    enum COLORS color; // 4 Bytes
+    struct aggro aggro; // 8 Bytes
+    struct cords distanceToPlayer; // 8 Bytes
+    float behaviour; // 4 Bytes
+};
+
+struct jogador{ // 1088 Bytes
+    struct cords position; // 8 Bytes
+    int level; // 4 Bytes
+    int velocity; // 4 Bytes
+    struct monster monsters[6]; // 1080 Bytes
+    struct monster *currentMonster; // 8 Bytes
+    struct monster *currentEnemy; // 8 Bytes
+};
 
 enum cena{MENU,WORLD_MAP,BATTLE,GAME_END};
 
-int main(){
-    // Dev Wise
-    int debugMode = 0;
-    int invencivel = 0;
+// Var
+char selectedAbilityIndex = ' ';
+char input = ' ';
+struct ability selectedAbility = {0};
+struct ability selectedAbilityEnemy = {0};
+struct ability NullAbility = {0};
+int attackRoll = 0;
+char logPlayer[60] = "";
+char logEnemy[60] = "";
 
-	// INIT
-	int scene = MENU;               /// Controle de cena
-	int running = 1;                /// Controle de jogo
-    int screenClearType = 0;        /// Tipo de clear
-    int battleTurn = 0;             /// Contador de turno batalha
-    int worldTurn = 0;              /// Contador de turno worldMap
-    int backgroundType = BLACK;     /// Cor do background de algumas cenas
+// Scores
+int walkedDistance = 0;
+int enemiesKilled = 0;
+int closestToDeath = 16;
+
+// Dev Wise
+int debugMode = 0;
+int invencivel = 0;
+
+// INIT
+int scene = MENU;               /// Controle de cena
+int running = 1;                /// Controle de jogo
+int screenClearType = 0;        /// Tipo de clear
+int battleTurn = 0;             /// Contador de turno batalha
+int worldTurn = 0;              /// Contador de turno worldMap
+int backgroundType = BLACK;     /// Cor do background de algumas cenas
+
+void BattleScene(struct jogador *jogador, struct monster *enemy);
+void SwitchMonster(struct jogador *jogador, char input);
+
+int main(){
     srand(time(NULL));
 
     // JOGADOR
-    int posX = 45;                  /// Posi��o X do jogador
-	int posY = 13;                  /// Posi��o Y do jogador
+    
+    struct jogador jogadorUm = {};
 
-	int velo = 2;                   /// Velocidade do jogador
-    int level = 1;                  /// Level do jogador
-	int healthMax = level * 5 + 15; /// Vida maxima do jogador
-    int health = healthMax;         /// Vida do jogador
-    int heartsCounter = 16;         /// Coracoes do jogador
-    int ataque = 0;                 /// Ataque do jogador
-    int defesa = 0;                 /// Defesa do jogador
-    int dano = 0;                   /// Dano do jogador
     //
 
     // ENEMY
-	int posX_Enemy = 80;                /// Posi��o X do inimigo
-	int posY_Enemy = 20;                /// Posi��o Y do inimigo
 
-	int health_Enemy = 100;             /// Vida do inimigo
-    int healthMax_Enemy = 100;          /// Vida maxima do inimigo
-    int heartsCounter_Enemy = 16;       /// Coracoes do inimigo
-	int velo_Enemy = 1;                 /// Velocidade do inimigo
+	struct ability allAbilities[20] = {
+        {"Porrada", 3, 0},
+        {"Rasteira", 5, 1},
+        {"Arranhao", 4, 0},
+        {"Tapa", 2, 0},
+        {"Corte", 6, 1},
+        {"Mordida", 8, 2}
+    };
 
-	int aggro_Enemy = 12;               /// Dist�ncia de aggro do inimigo
-    int aggroed_Enemy = 0;              /// Valor booleano do aggro
+    struct monster allMonsters[5] = {
+        {"Gabiru", 0, {0,0}, 1, {20,20}, {5,5,5,5}, {allAbilities[0], allAbilities[3], allAbilities[4], allAbilities[1]}, {10,10}, LIGHTGRAY, {8,0}, 0.0f},
+        {"Adomak", 0, {0,0}, 1, {22,22}, {7,4,4,5}, {allAbilities[2], allAbilities[5], allAbilities[3], allAbilities[1]}, {10,10}, GREEN, {10,0}, 0.0f}
+    };
 
-    int color_Enemy = BLACK;            /// Cor do inimigo
+    struct monster loadedMonsters[3] = {0};
 
-    int level_Enemy = 0;                /// Level do inimigo
-    int ataque_Enemy = 0;               /// Ataque do inimigo
-    int defesa_Enemy = 0;               /// Defesa do inimigo
-    int dano_Enemy = 0;                 /// Dano do inimigo
-
-    float behaviour = 0.0f;
     //
 
-    // Var
-    char input = ' ';
-    int yDist = 0;
-    int xDist = 0;
-    int dist = 0;
-    int attackRoll = 0;
-    char logPlayer[60] = "";
-    char logEnemy[60] = "";
-
-    // Scores
-    int walkedDistance = 0;
-    int enemiesKilled = 0;
-    int closestToDeath = 16;
-
     while (running) {
-
+        input = ' ';
         // Debug
         if(debugMode){
             textbackground(WHITE);
@@ -83,16 +112,11 @@ int main(){
 
 
             gotoxy(1, MAX_LINHA+3); textcolor(RED);
-            printf(" PLAYER-> pos:[%d,%d] ; health: %d/%d (%d) ; velo: %d ; input: %c ; dist: [%d, %d]-> %d ; ataque: %d ;  defesa: %d ; dano: %d ; level: %d "
-                , posX, posY, health, healthMax, heartsCounter,velo,input, xDist, yDist, dist, ataque, defesa, dano, level);
-
-            gotoxy(1, MAX_LINHA+4); textcolor(color_Enemy);
-            printf(" ENEMY-> pos:[%d,%d] ; health: %d/%d (%d) ; velo: %d ; aggro_range: %d ; aggroed: %d ; ataque: %d, defesa: %d ; dano: %d ; level: %d "
-                , posX_Enemy, posY_Enemy, health_Enemy, healthMax_Enemy, heartsCounter_Enemy, velo_Enemy, aggro_Enemy, aggroed_Enemy, ataque_Enemy, defesa_Enemy, dano_Enemy, level_Enemy);
+            printf(" PLAYER-> pos:[%d,%d] ; jogadorUm.velocity: %d ; input: %c ; jogadorUm.level: %d ", jogadorUm.position.x, jogadorUm.position.y, jogadorUm.velocity, input, jogadorUm.level);
         }
         else{
             textbackground(BLACK);
-            for(int i = MAX_LINHA+1; i <= MAX_LINHA+4; i++){
+            for(int i = MAX_LINHA+1; i <= MAX_LINHA+3; i++){
                 for(int k = 0; k <= MAX_COLUNA; k++){
                     gotoxy(k, i);
                     printf(" ");
@@ -163,29 +187,32 @@ int main(){
 
             case WORLD_MAP:
                 textbackground(backgroundType);
+                if(!worldTurn){
 
-                if(!level_Enemy){
-                    worldTurn = 0;
-                    battleTurn = 0;
-                    
-                    level_Enemy = rand()%3+level-1;
-
-                    posX_Enemy = rand()%MAX_COLUNA;
-                    posY_Enemy = rand()%MAX_LINHA;
-
-                    healthMax = level * 5 + 15;
-                    health = healthMax;
-                    ataque = level * 2 - 2;
-                    defesa = level * 2 + 8;
-                    dano = level * 2 + 2;
-
-                    healthMax_Enemy = level_Enemy * 5 + 15;
-                    health_Enemy = healthMax_Enemy;
-                    ataque_Enemy = level_Enemy * 2 - 2;
-                    defesa_Enemy = level_Enemy * 2 + 8;
-                    dano_Enemy = level_Enemy * 2 + 2;
                 }
                 else{
+                    if(worldTurn%20==0){
+                        for(int i = 0; i < listSize(loadedMonsters); i++){
+                            if(!rand()%50 && loadedMonsters[i].health.current <= 0){
+                                loadedMonsters[i] = allMonsters[rand()%sizeof(allMonsters)/sizeof(struct monster)];
+                                
+                            }
+                        }
+                    }
+                    for(int i = 0; i < listSize(loadedMonsters); i++){
+                        if(!loadedMonsters[i].level){                        
+                            loadedMonsters[i].level = max(rand()%5+jogadorUm.level-2, 1);
+    
+                            loadedMonsters[i].position.x = rand()%MAX_COLUNA;
+                            loadedMonsters[i].position.y = rand()%MAX_LINHA;
+        
+                            loadedMonsters[i].health.max *=  1 + loadedMonsters[i].level/10;
+                            loadedMonsters[i].health.current = loadedMonsters[i].health.max;
+                            loadedMonsters[i].atributes.speed *= 1 + loadedMonsters[i].level/10;
+                            loadedMonsters[i].atributes.attack *= 1 + loadedMonsters[i].level/10;
+                            loadedMonsters[i].atributes.defense *= 1 + loadedMonsters[i].level/10;
+                        }
+                    }
 
                     // Logica player
                     input = getch();
@@ -193,22 +220,22 @@ int main(){
                     switch(input){
                         case 'w':
                         case 'W':
-                            posY -= velo;
+                            jogadorUm.position.y -= jogadorUm.velocity;
                             walkedDistance++;
                             break;
                         case 's':
                         case 'S':
-                            posY += velo;
+                            jogadorUm.position.y += jogadorUm.velocity;
                             walkedDistance++;
                             break;
                         case 'a':
                         case 'A':
-                            posX -= velo;
+                            jogadorUm.position.x -= jogadorUm.velocity;
                             walkedDistance++;
                             break;
                         case 'd':
                         case 'D':
-                            posX += velo;
+                            jogadorUm.position.x += jogadorUm.velocity;
                             walkedDistance++;
                             break;
                     }
@@ -224,48 +251,47 @@ int main(){
                         break;
                     }
     
-                    if      (posX <= 0)           {posX = 0;}
-                    else if (posX >= MAX_COLUNA)  {posX = MAX_COLUNA;}
-                    if      (posY <= 0)           {posY = 0;}
-                    else if (posY >= MAX_LINHA)   {posY = MAX_LINHA;}
+                    if      (jogadorUm.position.x <= 0)           {jogadorUm.position.x = 0;}
+                    else if (jogadorUm.position.x >= MAX_COLUNA)  {jogadorUm.position.x = MAX_COLUNA;}
+                    if      (jogadorUm.position.y <= 0)           {jogadorUm.position.y = 0;}
+                    else if (jogadorUm.position.y >= MAX_LINHA)   {jogadorUm.position.y = MAX_LINHA;}
     
     
                     // Logica enemy
-                    xDist = posX - posX_Enemy;
-                    yDist = posY - posY_Enemy;
-                    dist = sqrt(pow(xDist, 2) + pow(yDist, 2)); /// Distancia entre o jogador e o inimigo
-    
-                    if(dist > aggro_Enemy){             /// Fora da range
-                        posX_Enemy += (rand() % 3 - 1) * velo_Enemy;
-                        posY_Enemy += (rand() % 3 - 1) * velo_Enemy;
-                        color_Enemy = YELLOW;
-                        aggroed_Enemy = 0;
-                    }
-                    else if(dist > velo_Enemy){         /// Dentro da range
-                        if(xDist != 0){
-                            posX_Enemy += (xDist / abs(xDist)) * velo_Enemy;
+                    for(int i = 0; i < listSize(loadedMonsters); i++){
+                        loadedMonsters[i].distanceToPlayer.x = jogadorUm.position.x - loadedMonsters[i].position.x;
+                        loadedMonsters[i].distanceToPlayer.y = jogadorUm.position.y - loadedMonsters[i].position.y;
+
+                        int dist = sqrt(pow(loadedMonsters[i].distanceToPlayer.x, 2) + pow(loadedMonsters[i].distanceToPlayer.y, 2)); /// Distancia entre o jogador e o inimigo
+        
+                        if(dist > loadedMonsters[i].aggro.range){             /// Fora da range
+                            loadedMonsters[i].position.x += (rand() % 3 - 1) * loadedMonsters[i].velocity;
+                            loadedMonsters[i].position.y += (rand() % 3 - 1) * loadedMonsters[i].velocity;
+                            loadedMonsters[i].aggro.aggroed = 0;
                         }
-                        if(yDist != 0){
-                            posY_Enemy += (yDist / abs(yDist)) * velo_Enemy;
+                        else if(dist > loadedMonsters[i].velocity){         /// Dentro da range
+                            if(loadedMonsters[i].distanceToPlayer.x != 0){
+                                loadedMonsters[i].position.x += (loadedMonsters[i].distanceToPlayer.x / abs(loadedMonsters[i].distanceToPlayer.x)) * loadedMonsters[i].velocity;
+                            }
+                            if(loadedMonsters[i].distanceToPlayer.y != 0){
+                                loadedMonsters[i].position.y += (loadedMonsters[i].distanceToPlayer.y / abs(loadedMonsters[i].distanceToPlayer.y)) * loadedMonsters[i].velocity;
+                            }
+                            loadedMonsters[i].aggro.aggroed = 1;
                         }
-                        color_Enemy = CYAN;
-                        aggroed_Enemy = 1;
-                    }
-                    else if(!invencivel){              /// Encostou no jogador
-                        color_Enemy = WHITE;
-                        scene = BATTLE;
-                        Sleep(200);
+                        else if(!invencivel){              /// Encostou no jogador
+                            jogadorUm.currentEnemy = &loadedMonsters[i];
+                            scene = BATTLE;
+                            Sleep(200);
+                        }
+                        
+                        if      (loadedMonsters[i].position.x <= 0)           {loadedMonsters[i].position.x = 0;}
+                        else if (loadedMonsters[i].position.x >= MAX_COLUNA)  {loadedMonsters[i].position.x = MAX_COLUNA;}
+                        if      (loadedMonsters[i].position.y <= 0)           {loadedMonsters[i].position.y = 0;}
+                        else if (loadedMonsters[i].position.y >= MAX_LINHA)   {loadedMonsters[i].position.y = MAX_LINHA;}
                     }
                 }
 
                 worldTurn++;
-
-                if(worldTurn > 99){level_Enemy = 0;}
-
-                if      (posX_Enemy <= 0)           {posX_Enemy = 0;}
-                else if (posX_Enemy >= MAX_COLUNA)  {posX_Enemy = MAX_COLUNA;}
-                if      (posY_Enemy <= 0)           {posY_Enemy = 0;}
-                else if (posY_Enemy >= MAX_LINHA)   {posY_Enemy = MAX_LINHA;}
 
                 // RENDER
                 textcolor(MAGENTA);
@@ -284,10 +310,12 @@ int main(){
 
                     // RENDER Other
 
-                    gotoxy(MAX_COLUNA,MAX_LINHA); textcolor(level+2); printf("%d", level);
+                    gotoxy(MAX_COLUNA,MAX_LINHA); textcolor(jogadorUm.level+2); printf("%d", jogadorUm.level);
                     // RENDER Entidades
-                    gotoxy(posX, posY); textcolor(YELLOW); printf("@");
-                    gotoxy(posX_Enemy, posY_Enemy); textcolor(color_Enemy); printf("%d", level_Enemy);
+                    gotoxy(jogadorUm.position.x, jogadorUm.position.y); textcolor(YELLOW); printf("@");
+                    for(int i = 0; i < listSize(loadedMonsters); i++){
+                        gotoxy(loadedMonsters[i].position.x, loadedMonsters[i].position.y); textcolor(loadedMonsters[i].color); printf("%d", loadedMonsters[i].level);
+                    }
                     //
                 //
 
@@ -296,202 +324,7 @@ int main(){
                 break;
 
             case BATTLE:
-                // Pre Turn
-                if(!battleTurn){
-                    textbackground(backgroundType); textcolor(CYAN);
-                    if(!screenClearType){
-                        for(int i = 0; i <= MAX_LINHA; i++){
-                            gotoxy(0, i);
-                            for(int k = 0; k <= MAX_COLUNA; k++){
-                                printf(" ");
-                            }
-                        }
-                    }
-                    else{
-                        clrscr();
-                    }
-                    for(int i = 0; i <= 26; i++){
-                        if(i > 0 ){gotoxy(41,i-1); printf("         ");}
-                        if(i < 26){gotoxy(41,i+0); printf("  _____  ");}
-                        if(i < 25){gotoxy(41,i+1); printf(" /     \\ ");}
-                        if(i < 24){gotoxy(41,i+2); printf("| () () |");}
-                        if(i < 23){gotoxy(41,i+3); printf(" \\  ^  / ");}
-                        if(i < 22){gotoxy(41,i+4); printf("  |||||  ");}
-                        if(i < 21){gotoxy(41,i+5); printf("  |||||  ");}
-                        Sleep(150);
-                    }
-
-                    behaviour = (level - level_Enemy)*4;
-                    strcpy(logPlayer,""); strcpy(logEnemy, "");
-                    
-                    battleTurn++;
-                }
-                else{
-                    // In Turn
-                    do{
-                        input = getch();
-                    }while(input != '1' && input != '2');
-    
-                    switch(input){
-                        case '1':
-                            attackRoll = (rand()%19+1) + ataque;
-                            if(attackRoll > defesa_Enemy){
-                                health_Enemy -= dano;
-                                strcpy(logPlayer, "O jogador acertou o inimigo, causando %d de dano");
-                            }
-                            else{strcpy(logPlayer, "O jogador tentou acertar o inimigo mas errou");}
-                            break;
-                        case '2':
-                            if(!(rand()%4)){
-                                scene = WORLD_MAP;
-                                level_Enemy = 0;
-                                strcpy(logPlayer, "O jogador fugiu da batalha");
-                            }
-                            else{strcpy(logPlayer, "O jogador tentou fugir da batalha mas nao conseguiu");}
-                            break;
-                    }
-    
-                    if(rand()%11 >= behaviour){
-                        attackRoll = (rand()%19+1) + ataque_Enemy;
-                        if(attackRoll > defesa){
-                            health -= dano_Enemy;
-                            strcpy(logEnemy, "O inimigo acertou o jogador, causando %d de dano");
-                        }
-                        else{strcpy(logEnemy, "O inimigo tentou acertar o jogador mas errou");}
-                    }
-                    else{
-                        if(!(rand()%10)){
-                            scene = WORLD_MAP;
-                            posX_Enemy = rand()%MAX_COLUNA;
-                            posY_Enemy = rand()%MAX_LINHA;
-                            worldTurn = 0; battleTurn = 0;
-                            strcpy(logEnemy, "O inimigo fugiu da batalha");
-                        }
-                        else{strcpy(logEnemy, "O inimigo tentou fugir da batalha mas nao conseguiu");}
-                    }
-
-                    // Post Turn
-                    
-                    if(health_Enemy <= 0){
-                        scene = WORLD_MAP;
-                        level++;
-                        enemiesKilled++;
-                        closestToDeath = min(closestToDeath,heartsCounter);
-                        level_Enemy = 0;
-                    }
-                    else if(health <= 0){scene = GAME_END;}
-                    
-                    heartsCounter_Enemy = (health_Enemy*1.0f/healthMax_Enemy)*16;
-                    heartsCounter = (health*1.0f/healthMax)*16;
-    
-                    behaviour = min((level-level_Enemy) * 3 + (16.0f/heartsCounter_Enemy) * 2, 9);
-                }
-                
-                // RENDER
-                textbackground(BLACK); textcolor(MAGENTA);                
-                for(int i = 0; i <= MAX_LINHA; i++){
-                    gotoxy(0,i);
-                    if(i == 0 || i == MAX_LINHA || i == 20){
-                        for(int k = 0; k <= MAX_COLUNA; k++){printf("=");}
-                    }
-                    else{
-                        for(int k = 0; k <= MAX_COLUNA; k++){
-                            if(k == 0 || k == MAX_COLUNA || (i > 20 && k == 60)){printf("|");}
-                            else{printf(" ");}
-                        }
-                    }
-                }
-
-                gotoxy(0,0); printf("+");
-                gotoxy(0,20); printf("+");
-                gotoxy(0,MAX_LINHA); printf("+");
-                gotoxy(MAX_COLUNA,0); printf("+");
-                gotoxy(MAX_COLUNA,20); printf("+");
-                gotoxy(MAX_COLUNA,MAX_LINHA); printf("+");
-                gotoxy(60,20); printf("+");
-                gotoxy(60,MAX_LINHA); printf("+");
-                // RENDER CHARS
-                gotoxy(78,2); printf("   ,-.   ");
-                gotoxy(78,3);
-                if(heartsCounter_Enemy>12){
-                    printf(" _(-_-)_ ");
-                }
-                else if(heartsCounter_Enemy>8){
-                    printf(" _(O_O)_ ");
-                }
-                else{
-                    printf(" _(*_*)_ ");
-                }
-                gotoxy(78,4); printf("(_  o  _)");
-                gotoxy(78,5); printf("  / o \\  ");
-                gotoxy(78,6); printf(" (_/ \\_) ");
-                
-                gotoxy(4,14); printf("  .-'''-.  ");
-                gotoxy(4,15);
-                if(heartsCounter>12){
-                    printf(" /(.) (.)\\ ");
-                }
-                else if(heartsCounter>8){
-                    printf(" /(O) (O)\\");
-                }
-                else{
-                    printf(" /(X) (X)\\");
-                }
-                gotoxy(4,16); printf(";    O    ;");
-                gotoxy(4,17); printf(" \\ }---{ / ");
-                gotoxy(4,18); printf("  '-...-'  ");
-                //
-                for(int i = 0; i < heartsCounter_Enemy; i++){
-                    gotoxy(72+i,9);
-                    switch(i%4){
-                        case 0:
-                            printf("(");
-                            break;
-                        case 1:
-                            printf("\\");
-                            gotoxy(72+i,10);
-                            printf("\\");
-                            break;
-                        case 2:
-                            printf("/");
-                            gotoxy(72+i,10);
-                            printf("/");
-                            break;
-                        case 3:
-                            printf(")");
-                            break;
-                    }
-                }
-
-                for(int i = 0; i < heartsCounter; i++){
-                    gotoxy(4+i,11);
-                    switch(i%4){
-                        case 0:
-                            printf("(");
-                            break;
-                        case 1:
-                            printf("\\");
-                            gotoxy(4+i,12);
-                            printf("\\");
-                            break;
-                        case 2:
-                            printf("/");
-                            gotoxy(4+i,12);
-                            printf("/");
-                            break;
-                        case 3:
-                            printf(")");
-                            break;
-                    }
-                }
-
-                gotoxy(4,MAX_LINHA-2); printf(logEnemy, dano_Enemy);
-                gotoxy(4,MAX_LINHA-3); printf(logPlayer, dano);
-                gotoxy(65,MAX_LINHA-3); printf("1. ATACAR");
-                gotoxy(65,MAX_LINHA-2); printf("2. FUGIR");
-
-                gotoxy(2,2); printf("Turno %d", battleTurn);
-                battleTurn++;
+                BattleScene(&jogadorUm, jogadorUm.currentEnemy);
                 break;
 
             case GAME_END:
@@ -520,8 +353,248 @@ int main(){
 
     }
     textbackground(BLACK);
-    textcolor(BLACK);
-
+    textcolor(WHITE);
     clrscr();
     return 0;
+}
+
+void BattleScene(struct jogador *jogador, struct monster *enemy){
+    // Pre Turn
+    if(!battleTurn){
+        textbackground(backgroundType); textcolor(CYAN);
+        if(!screenClearType){
+            for(int i = 0; i <= MAX_LINHA; i++){
+                gotoxy(0, i);
+                for(int k = 0; k <= MAX_COLUNA; k++){
+                    printf(" ");
+                }
+            }
+        }
+        else{
+            clrscr();
+        }
+        for(int i = 0; i <= 26; i++){
+            if(i > 0 ){gotoxy(41,i-1); printf("         ");}
+            if(i < 26){gotoxy(41,i+0); printf("  _____  ");}
+            if(i < 25){gotoxy(41,i+1); printf(" /     \\ ");}
+            if(i < 24){gotoxy(41,i+2); printf("| () () |");}
+            if(i < 23){gotoxy(41,i+3); printf(" \\  ^  / ");}
+            if(i < 22){gotoxy(41,i+4); printf("  |||||  ");}
+            if(i < 21){gotoxy(41,i+5); printf("  |||||  ");}
+            Sleep(150);
+        }
+
+        enemy->behaviour = (jogador->level - enemy->level)*4;
+        strcpy(logPlayer,""); strcpy(logEnemy, "");
+        
+        battleTurn++;
+    }
+    else{
+        // In Turn
+        do{
+            input = getch();
+        }while(!(input == '1' || input == '2' || input == '3'));
+
+        switch(input){
+            case '1':
+                selectedAbility = NullAbility;
+                attackRoll = (rand()%19+1) + jogador->currentMonster->atributes.attack;
+                do{
+                    selectedAbilityIndex = getch();
+                    switch(selectedAbilityIndex){
+                        case '1':
+                            selectedAbility = jogador->currentMonster->abilities[0];
+                            break;
+                        case '2':
+                            selectedAbility = jogador->currentMonster->abilities[1];
+                            break;
+                        case '3':
+                            selectedAbility = jogador->currentMonster->abilities[2];
+                            break;
+                        case '4':
+                            selectedAbility = jogador->currentMonster->abilities[3];
+                            break;
+                    }
+                }while(!(input == '1' || input == '2' || input == '3' || input == '4') && (selectedAbility.name == "" || jogador->currentMonster->stamina.current - selectedAbility.cost >= 0));
+                if(attackRoll > enemy->atributes.defense){
+                    enemy->health.current -= selectedAbility.damage;
+                    strcpy(logPlayer, "O jogador acertou o inimigo com %s, causando %d de dano");
+                }
+                else{strcpy(logPlayer, "O jogador tentou acertar o inimigo mas errou");}
+                break;
+            case '2':
+                if(!(rand()%4)){
+                    scene = WORLD_MAP;
+                    worldTurn = 0;
+                    strcpy(logPlayer, "O jogador fugiu da batalha");
+                }
+                else{strcpy(logPlayer, "O jogador tentou fugir da batalha mas nao conseguiu");}
+                break;
+            case '3':
+                input = getch();
+                SwitchMonster(jogador, input);
+                break;
+        }
+
+        if(rand()%11 >= enemy->behaviour){
+            attackRoll = (rand()%19+1) + enemy->atributes.attack;
+            if(attackRoll > jogador->currentMonster->atributes.defense){
+                selectedAbilityEnemy = enemy->abilities[rand()%4];
+                jogador->currentMonster->health.current -= selectedAbilityEnemy.damage;
+                strcpy(logEnemy, "O inimigo acertou o jogador com %s, causando %d de dano");
+            }
+            else{strcpy(logEnemy, "O inimigo tentou acertar o jogador mas errou");}
+        }
+        else{
+            if(!(rand()%10)){
+                scene = WORLD_MAP;
+                enemy->position.x = rand()%MAX_COLUNA;
+                enemy->position.y = rand()%MAX_LINHA;
+                worldTurn = 0; battleTurn = 0;
+                strcpy(logEnemy, "O inimigo fugiu da batalha");
+            }
+            else{strcpy(logEnemy, "O inimigo tentou fugir da batalha mas nao conseguiu");}
+        }
+
+        // Post Turn
+        
+        if(enemy->health.current <= 0){
+            scene = WORLD_MAP;
+            jogador->currentMonster->level++;
+            enemiesKilled++;
+            closestToDeath = min(closestToDeath,hearts(jogador->currentMonster->health));
+        }
+        else if(jogador->currentMonster->health.current <= 0){scene = GAME_END;}
+        
+        enemy->behaviour = min((jogador->currentMonster->level-enemy->level) * 3 + (16.0f/hearts(enemy->health)) * 2, 9);
+    }
+    // RENDER
+    textbackground(BLACK); textcolor(MAGENTA);                
+    for(int i = 0; i <= MAX_LINHA; i++){
+        gotoxy(0,i);
+        if(i == 0 || i == MAX_LINHA || i == 20){
+            for(int k = 0; k <= MAX_COLUNA; k++){printf("=");}
+        }
+        else{
+            for(int k = 0; k <= MAX_COLUNA; k++){
+                if(k == 0 || k == MAX_COLUNA || (i > 20 && k == 60)){printf("|");}
+                else{printf(" ");}
+            }
+        }
+    }
+
+    gotoxy(0,0); printf("+");
+    gotoxy(0,20); printf("+");
+    gotoxy(0,MAX_LINHA); printf("+");
+    gotoxy(MAX_COLUNA,0); printf("+");
+    gotoxy(MAX_COLUNA,20); printf("+");
+    gotoxy(MAX_COLUNA,MAX_LINHA); printf("+");
+    gotoxy(60,20); printf("+");
+    gotoxy(60,MAX_LINHA); printf("+");
+    // RENDER CHARS
+    gotoxy(78,2); printf("   ,-.   ");
+    gotoxy(78,3);
+    if(hearts(enemy->health)>12){
+        printf(" _(-_-)_ ");
+    }
+    else if(hearts(enemy->health)>8){
+        printf(" _(O_O)_ ");
+    }
+    else{
+        printf(" _(*_*)_ ");
+    }
+    gotoxy(78,4); printf("(_  o  _)");
+    gotoxy(78,5); printf("  / o \\  ");
+    gotoxy(78,6); printf(" (_/ \\_) ");
+    
+    gotoxy(4,14); printf("  .-'''-.  ");
+    gotoxy(4,15);
+    if(hearts(jogador->currentMonster->health)>12){
+        printf(" /(.) (.)\\ ");
+    }
+    else if(hearts(jogador->currentMonster->health)>8){
+        printf(" /(O) (O)\\");
+    }
+    else{
+        printf(" /(X) (X)\\");
+    }
+    gotoxy(4,16); printf(";    O    ;");
+    gotoxy(4,17); printf(" \\ }---{ / ");
+    gotoxy(4,18); printf("  '-...-'  ");
+    //
+    for(int i = 0; i < hearts(enemy->health); i++){
+        gotoxy(72+i,9);
+        switch(i%4){
+            case 0:
+                printf("(");
+                break;
+            case 1:
+                printf("\\");
+                gotoxy(72+i,10);
+                printf("\\");
+                break;
+            case 2:
+                printf("/");
+                gotoxy(72+i,10);
+                printf("/");
+                break;
+            case 3:
+                printf(")");
+                break;
+        }
+    }
+
+    for(int i = 0; i < hearts(jogador->currentMonster->health); i++){
+        gotoxy(4+i,11);
+        switch(i%4){
+            case 0:
+                printf("(");
+                break;
+            case 1:
+                printf("\\");
+                gotoxy(4+i,12);
+                printf("\\");
+                break;
+            case 2:
+                printf("/");
+                gotoxy(4+i,12);
+                printf("/");
+                break;
+            case 3:
+                printf(")");
+                break;
+        }
+    }
+
+    gotoxy(4,MAX_LINHA-2); printf(logEnemy, selectedAbilityEnemy.name, selectedAbilityEnemy.damage);
+    gotoxy(4,MAX_LINHA-3); printf(logPlayer, selectedAbility.name, selectedAbility.damage);
+    gotoxy(65,MAX_LINHA-3); printf("1. ATACAR");
+    gotoxy(76,MAX_LINHA-3); printf("2. FUGIR");
+    gotoxy(65,MAX_LINHA-2); printf("3. TROCAR");
+
+    gotoxy(2,2); printf("Turno %d", battleTurn);
+    battleTurn++;
+}
+
+void SwitchMonster(struct jogador *jogador, char input){
+    switch(input){
+        case '1':
+            if(jogador->monsters[0].health.current > 0){jogador->currentMonster = &jogador->monsters[0];}
+            break;
+        case '2':
+            if(jogador->monsters[1].health.current > 0){jogador->currentMonster = &jogador->monsters[1];}
+            break;
+        case '3':
+            if(jogador->monsters[2].health.current > 0){jogador->currentMonster = &jogador->monsters[3];}
+            break;
+        case '4':
+            if(jogador->monsters[3].health.current > 0){jogador->currentMonster = &jogador->monsters[3];}
+            break;
+        case '5':
+            if(jogador->monsters[4].health.current > 0){jogador->currentMonster = &jogador->monsters[4];}
+            break;
+        case '6':
+            if(jogador->monsters[5].health.current > 0){jogador->currentMonster = &jogador->monsters[5];}
+            break;
+    }
 }
