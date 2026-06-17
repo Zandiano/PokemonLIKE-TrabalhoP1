@@ -321,6 +321,7 @@ void MENU_SCENE(){
             gotoxy(0,0);
             printf("Quantos inimigos? [Default: 2] (1-5): ");
             scanf("%d", &enemyQnt);
+            enemyQnt = min(max(enemyQnt,1),5);
             break;
             
         case '3':
