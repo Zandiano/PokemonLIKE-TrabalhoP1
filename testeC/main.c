@@ -6,7 +6,7 @@
 
 #define MAX_COLUNA 90 /// X
 #define MAX_LINHA 25  /// Y
-#define MAXENEMIES 10
+#define MAXENEMIES 5
 #define ATR_QNT 10
 
 enum cena{MENU,WORLD_MAP,BATTLE,GAME_END};
