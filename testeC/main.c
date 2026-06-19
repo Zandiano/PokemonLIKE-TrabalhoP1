@@ -13,7 +13,7 @@ enum element{fire, water, grass};
 enum atr{hp, atk, spatk, def, spdef, spd};
 enum type{physical, special};
 
-struct color{enum COLORS idle; enum COLORS pursuit;};
+struct color{enum COLORS idle; enum COLORS pursuit; enum COLORS current;};
 struct damage{int value; enum element element; enum type type;};
 struct nature{enum atr up; enum atr down;};
 struct indentifier{char symbol; char name[30];};
@@ -53,6 +53,38 @@ int doAttempt(struct entity target, struct entity attacker, int abilityIndex){
     int dmg = (attacker.abilities[abilityIndex].damage.value/50)*attacker.atributes[atk+attacker.abilities[abilityIndex].damage.type] - target.atributes[def+attacker.abilities[abilityIndex].damage.type];
     target.health.current -= dmg;
     return dmg;
+}
+
+int isCharInsideArray(char x, char array[]){
+    for(int i = 0; i < strlen(array); i++){
+        if(array[i] == x){return 1;}
+    }
+    return 0;
+}
+
+void PrintHearts(int hearts, struct pos pos){
+    for(int i = 0; i < hearts; i++){
+        gotoxy(pos.x+i,pos.y);
+        switch(i%4){
+            case 0:
+                printf("(");
+                break;
+            case 1:
+                printf("\\");
+                gotoxy(pos.x+i,pos.y+1);
+                printf("\\");
+                break;
+            case 2:
+                printf("/");
+                gotoxy(pos.x+i,pos.y+1);
+                printf("/");
+                break;
+            case 3:
+                printf(")");
+                break;
+        }
+    }
+
 }
 
 // Dev Wise
@@ -220,7 +252,7 @@ int main(){
                         if(dist > aggro_Enemy){             /// Fora da range
                             enemies[i].pos.x += (rand() % 3 - 1) * enemies[i].velo;
                             enemies[i].pos.y += (rand() % 3 - 1) * enemies[i].velo;
-                            enemies[i].color.idle = YELLOW;
+                            enemies[i].color.current = enemies[i].color.idle;
                         }
                         else if(dist > enemies[i].velo){         /// Dentro da range
                             if(xDist != 0){
@@ -229,10 +261,9 @@ int main(){
                             if(yDist != 0){
                                 enemies[i].pos.y += (yDist / abs(yDist)) * enemies[i].velo;
                             }
-                            enemies[i].color.idle = CYAN;
+                            enemies[i].color.current = enemies[i].color.pursuit;
                         }
                         else if(!invencivel){              /// Encostou no jogador
-                            enemies[i].color.idle = WHITE;
                             enemyIndex = i;
                             scene = BATTLE;
                             Sleep(200);
@@ -256,7 +287,7 @@ int main(){
                     gotoxy(MAX_COLUNA,MAX_LINHA); textcolor(jogador.level+2); printf("%d", jogador.level);
                     // RENDER Entidades
                     gotoxy(jogador.pos.x, jogador.pos.y); textcolor(YELLOW); printf("@");
-                    for(int i = 0; i < enemyQnt; i++){gotoxy(enemies[i].pos.x, enemies[i].pos.y); textcolor(enemies[i].color.idle); printf("%c", enemies[i].indentifier.symbol);}
+                    for(int i = 0; i < enemyQnt; i++){gotoxy(enemies[i].pos.x, enemies[i].pos.y); textcolor(enemies[i].color.current); printf("%c", enemies[i].indentifier.symbol);}
                     //
                 //
 
@@ -387,17 +418,20 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
 
         behaviour = (jogador.level - enemy.level)*4;
         strcpy(logPlayer,""); strcpy(logEnemy, "");
+        jogador.currentEntity = 0;
         
         battleTurn++;
     }
     else{
         // In Turn
-        do{input = getch();}while(input != '1' && input != '2');
+        do{input = getch();}while(isCharInsideArray(input, "12"));
 
+        int attempt[2] = {0};
         switch(input){
             case '1':
-                int attempt = doAttempt(enemy, jogador.bag[jogador.currentEntity], 0);
-                if(attempt){strcpy(logPlayer, "O jogador acertou o inimigo, causando %d de dano");}
+                do{input = getch();}while(isCharInsideArray(input, "1234"));
+                attempt[0] = doAttempt(enemy, jogador.bag[jogador.currentEntity], (int)input - '1');
+                if(attempt[0]){strcpy(logPlayer, "O jogador acertou o inimigo, causando %d de dano");}
                 else{strcpy(logPlayer, "O jogador tentou acertar o inimigo mas errou");}
                 break;
             case '2':
@@ -407,8 +441,8 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
         } 
 
         if(rand()%11 >= behaviour){
-            int attempt = doAttempt(jogador.bag[jogador.currentEntity], enemy, 0);
-            if(attempt){strcpy(logEnemy, "O inimigo acertou o jogador, causando %d de dano");}
+            int attempt[1] = doAttempt(jogador.bag[jogador.currentEntity], enemy, rand()%4);
+            if(attempt[1]){strcpy(logEnemy, "O inimigo acertou o jogador, causando %d de dano");}
             else{strcpy(logEnemy, "O inimigo tentou acertar o jogador mas errou");}
         }
         else{
@@ -431,20 +465,18 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
             closestToDeath = min(closestToDeath,heartsCounter[0]);
             worldTurn = 0; battleTurn = 0;
         }
-        else if(jogador[HCUR] <= 0){scene = GAME_END;}
+        else if(jogador.bag[jogador.currentEntity] <= 0){scene = GAME_END;}
         
         heartsCounter[1] = (enemy.health.current*1.0f/enemy.health.max)*16;
-        heartsCounter[0] = (jogador[HCUR]*1.0f/jogador[HMAX])*16;
+        heartsCounter[0] = (jogador.bag[jogador.currentEntity].health.current*1.0f/jogador.bag[jogador.currentEntity].health.max)*16;
 
         behaviour = min((jogador.level-enemy.level) * 3 + (16.0f/heartsCounter[0]) * 2, 9);
     }
 
     // RENDER
     textbackground(BLACK); textcolor(MAGENTA);
-    Moldura();             
-
-
-
+    Moldura();
+    
     // RENDER CHARS
     gotoxy(78,2); printf("   ,-.   ");
     gotoxy(78,3);
@@ -476,52 +508,11 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
     gotoxy(4,17); printf(" \\ }---{ / ");
     gotoxy(4,18); printf("  '-...-'  ");
     //
-    for(int i = 0; i < heartsCounter[1]; i++){
-        gotoxy(72+i,9);
-        switch(i%4){
-            case 0:
-                printf("(");
-                break;
-            case 1:
-                printf("\\");
-                gotoxy(72+i,10);
-                printf("\\");
-                break;
-            case 2:
-                printf("/");
-                gotoxy(72+i,10);
-                printf("/");
-                break;
-            case 3:
-                printf(")");
-                break;
-        }
-    }
+    PrintHearts(heartsCounter[1], {72,9});
+    PrintHearts(heartsCounter[0], {4,11});
 
-    for(int i = 0; i < heartsCounter[0]; i++){
-        gotoxy(4+i,11);
-        switch(i%4){
-            case 0:
-                printf("(");
-                break;
-            case 1:
-                printf("\\");
-                gotoxy(4+i,12);
-                printf("\\");
-                break;
-            case 2:
-                printf("/");
-                gotoxy(4+i,12);
-                printf("/");
-                break;
-            case 3:
-                printf(")");
-                break;
-        }
-    }
-
-    gotoxy(4,MAX_LINHA-2); printf(logEnemy, enemies[DMG][enemyIndex]);
-    gotoxy(4,MAX_LINHA-3); printf(logPlayer, jogador[DMG]);
+    gotoxy(4,MAX_LINHA-2); printf(logEnemy, attempt[1]);
+    gotoxy(4,MAX_LINHA-3); printf(logPlayer, attempt[0]);
     gotoxy(65,MAX_LINHA-3); printf("1. ATACAR");
     gotoxy(65,MAX_LINHA-2); printf("2. FUGIR");
 
@@ -533,7 +524,7 @@ void ResetEnemies(struct entity enemies[MAXENEMIES]){
     for(int i = 0; i < enemyQnt; i++){
         enemies[i].pos.x = (rand()%(MAX_COLUNA-1))+1;
         enemies[i].pos.y = (rand()%(MAX_LINHA-1))+1;
-        enemies[i].velo = 1;//(rand()%2)+1;
+        enemies[i].velo = 1;
         enemies[i].level = max(1,(rand()%3)-1+jogador.level);
         enemies[HMAX][i] = enemies[i].level * 5 + 10 + (rand()%11);
         enemies[HCUR][i] = enemies[HMAX][i];
