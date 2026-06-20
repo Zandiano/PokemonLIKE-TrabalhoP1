@@ -3,6 +3,7 @@
 #include <time.h>
 #include <math.h>
 #include "gconio.h"
+#include <stdbool.h>
 
 #define MAX_COLUNA 90 /// X
 #define MAX_LINHA 25  /// Y
@@ -16,7 +17,7 @@ enum type{physical, special};
 struct color{enum COLORS idle; enum COLORS pursuit; enum COLORS current;};
 struct damage{int value; enum element element; enum type type;};
 struct nature{enum atr up; enum atr down;};
-struct indentifier{char symbol; char name[30];};
+struct indentifier{char symbol; char name[20];};
 struct pos{int x; int y;};
 struct health{int current; int max;};
 struct ability{
@@ -25,18 +26,26 @@ struct ability{
     int accuracy;
 };
 
+struct specie{
+    struct indentifier indentifier;
+    int num;
+    enum atr base;
+    enum element element;
+    struct color color[2];
+};
+
 struct entity{
     struct indentifier indentifier;
     struct pos pos;
     struct health health;
     int level;
     int velo;
+    bool isShiny;
     enum atr IV[6];
     enum atr atributes[6];
-    enum element element;
+    struct specie specie;
     struct nature nature;
     struct ability abilities[4];
-    struct color color;
 };
 
 struct player{
@@ -49,8 +58,8 @@ struct player{
 
 float ElementEffectiviness(enum element attacker, enum element target){
     if((attacker+2)%4 == target){return 2.0f;}
-else if((attacker+1)%4 == target){return 1.0f;}
-else{return 0.5f;}
+    else if((attacker+1)%4 == target){return 1.0f;}
+    else{return 0.5f;}
 }
 
 int doAttempt(struct entity target, struct entity attacker, int abilityIndex){
@@ -59,7 +68,7 @@ int doAttempt(struct entity target, struct entity attacker, int abilityIndex){
         return 0;
     int dmg = (attacker.abilities[abilityIndex].damage.value/50)*attacker.atributes[atk+attacker.abilities[abilityIndex].damage.type] - target.atributes[def+attacker.abilities[abilityIndex].damage.type];
     target.health.current -= dmg;
-    return dmg*ElementEffectiviness(attacker.abilities[abilityIndex].damage.element, target.element);
+    return dmg*ElementEffectiviness(attacker.abilities[abilityIndex].damage.element, target.specie.element);
 }
 
 int isCharInsideArray(char x, char array[]){
@@ -69,21 +78,21 @@ int isCharInsideArray(char x, char array[]){
     return 0;
 }
 
-void PrintHearts(int hearts, struct pos pos){
+void PrintHearts(int hearts, int x, int y){
     for(int i = 0; i < hearts; i++){
-        gotoxy(pos.x+i,pos.y);
+        gotoxy(x+i,y);
         switch(i%4){
             case 0:
                 printf("(");
                 break;
             case 1:
                 printf("\\");
-                gotoxy(pos.x+i,pos.y+1);
+                gotoxy(x+i,y+1);
                 printf("\\");
                 break;
             case 2:
                 printf("/");
-                gotoxy(pos.x+i,pos.y+1);
+                gotoxy(x+i,y+1);
                 printf("/");
                 break;
             case 3:
@@ -95,13 +104,13 @@ void PrintHearts(int hearts, struct pos pos){
 }
 
 // Dev Wise
-int debugMode = 0;
-int invencivel = 0;
+bool debugMode = FALSE;
+bool invencivel = FALSE;
 
 // INIT
 
 int scene = MENU;               /// Controle de cena
-int running = 1;                /// Controle de jogo
+bool running = TRUE;                /// Controle de jogo
 int screenClearType = 0;        /// Tipo de clear
 int battleTurn = 0;             /// Contador de turno batalha
 int worldTurn = 0;              /// Contador de turno worldMap
@@ -111,7 +120,6 @@ int enemyQnt = 2;
 char input = ' ';
 
 // JOGADOR
-struct player jogador = {{0}, {45,13}, 1, 2};
 //
 
 // Var
@@ -130,9 +138,11 @@ int walkedDistance = 0;
 int enemiesKilled = 0;
 int closestToDeath = 16;
 
+void END_SCENE();
 void MENU_SCENE();
+void WORLD_SCENE(struct entity enemies[], struct player jogador);
 void BATTLE_SCENE(struct entity enemy, struct player jogador);
-void ResetEnemies(struct entity enemies[MAXENEMIES]);
+void ResetEnemies(struct entity enemies[MAXENEMIES], struct player jogador);
 void Init();
 
 void Moldura(){
@@ -172,6 +182,7 @@ void CaveiraAnim(){
 
 int main(){
     srand(time(NULL));
+    struct player jogador = {{0}, {45,13}, 1, 2};
     struct entity enemies[MAXENEMIES] = {0};
     while (running) {
 
@@ -200,133 +211,15 @@ int main(){
                 MENU_SCENE();
                 break;
             case WORLD_MAP:
-                textbackground(backgroundType);
-
-                if(!worldTurn){
-                    battleTurn = 0;
-                    
-                    ResetEnemies(enemies);
-                }
-                else{
-                    // Logica player
-                    input = getch();
-    
-                    switch(input){
-                        case 'w':
-                        case 'W':
-                            jogador.pos.y -= jogador.velo;
-                            walkedDistance++;
-                            break;
-                        case 's':
-                        case 'S':
-                            jogador.pos.y += jogador.velo;
-                            walkedDistance++;
-                            break;
-                        case 'a':
-                        case 'A':
-                            jogador.pos.x -= jogador.velo;
-                            walkedDistance++;
-                            break;
-                        case 'd':
-                        case 'D':
-                            jogador.pos.x += jogador.velo;
-                            walkedDistance++;
-                            break;
-                    }
-                        
-                    switch(input){
-                    case 'o':
-                        if(invencivel){invencivel = 0;}
-                        else{invencivel = 1;}
-                        break;
-                    case 'p':
-                        if(debugMode){debugMode = 0;}
-                        else{debugMode = 1;}
-                        break;
-                    }
-    
-                    if      (jogador.pos.x <= 0)           {jogador.pos.x = 0;}
-                    else if (jogador.pos.x >= MAX_COLUNA)  {jogador.pos.x = MAX_COLUNA;}
-                    if      (jogador.pos.y <= 0)           {jogador.pos.y = 0;}
-                    else if (jogador.pos.y >= MAX_LINHA-5)   {jogador.pos.y = MAX_LINHA-5;}
-    
-                    // Logica enemy
-                    for(int i = 0; i < enemyQnt; i++){
-                        int xDist = jogador.pos.x - enemies[i].pos.x;
-                        int yDist = jogador.pos.y - enemies[i].pos.y;
-                        int dist = sqrt(xDist*xDist + yDist*yDist); /// Distancia entre o jogador e o inimigo
-        
-                        if(dist > aggro_Enemy){             /// Fora da range
-                            enemies[i].pos.x += (rand() % 3 - 1) * enemies[i].velo;
-                            enemies[i].pos.y += (rand() % 3 - 1) * enemies[i].velo;
-                            enemies[i].color.current = enemies[i].color.idle;
-                        }
-                        else if(dist > enemies[i].velo){         /// Dentro da range
-                            if(xDist != 0){
-                                enemies[i].pos.x += (xDist / abs(xDist)) * enemies[i].velo;
-                            }
-                            if(yDist != 0){
-                                enemies[i].pos.y += (yDist / abs(yDist)) * enemies[i].velo;
-                            }
-                            enemies[i].color.current = enemies[i].color.pursuit;
-                        }
-                        else if(!invencivel){              /// Encostou no jogador
-                            enemyIndex = i;
-                            scene = BATTLE;
-                            Sleep(200);
-                        }
-                        if      (enemies[i].pos.x <= 0)           {enemies[i].pos.x = 0;}
-                        else if (enemies[i].pos.x >= MAX_COLUNA)  {enemies[i].pos.x = MAX_COLUNA;}
-                        if      (enemies[i].pos.y <= 0)           {enemies[i].pos.y = 0;}
-                        else if (enemies[i].pos.y >= MAX_LINHA-5)   {enemies[i].pos.y = MAX_LINHA-5;}
-                    }
-                }
-
-                worldTurn++;
-
-                worldTurn = worldTurn%100;
-
-                // RENDER
-                textcolor(MAGENTA);
-                Moldura();
-
-                    // RENDER Other
-                    gotoxy(MAX_COLUNA,MAX_LINHA); textcolor(jogador.level+2); printf("%d", jogador.level);
-                    // RENDER Entidades
-                    gotoxy(jogador.pos.x, jogador.pos.y); textcolor(YELLOW); printf("@");
-                    for(int i = 0; i < enemyQnt; i++){gotoxy(enemies[i].pos.x, enemies[i].pos.y); textcolor(enemies[i].color.current); printf("%c", enemies[i].indentifier.symbol);}
-                    //
-                //
-
-
-                gotoxy(MAX_COLUNA, MAX_LINHA+1);
-                break;
+                WORLD_SCENE(enemies, jogador);
+            break;
 
             case BATTLE:
-                BATTLE_SCENE();
+                BATTLE_SCENE(enemies[enemyIndex],jogador);
                 break;
 
             case GAME_END:
-                textbackground(backgroundType);
-                if(!screenClearType){
-                    for(int i = 0; i <= MAX_LINHA; i++){
-                        gotoxy(0, i);
-                        for(int k = 0; k <= MAX_COLUNA; k++){
-                            printf(" ");
-                        }
-                    }
-                }
-                else{
-                    clrscr();
-                }
-                textcolor(CYAN);
-                gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); printf("PERDEU MANE");
-                gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+2); printf("Voce andou %d caracteres de distancia", walkedDistance);
-                gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+4); printf("Voce matou %d inimigo(s)", enemiesKilled);
-                gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+6); printf("Em sua batalha mais dificil voce ficou com %d coracoes de vida", closestToDeath);
-                getch();
-                scene = MENU;
-                Sleep(3000);
+                END_SCENE();
                 break;
             }
 
@@ -336,6 +229,29 @@ int main(){
 
     clrscr();
     return 0;
+}
+
+void END_SCENE(){
+    textbackground(backgroundType);
+    if(!screenClearType){
+        for(int i = 0; i <= MAX_LINHA; i++){
+            gotoxy(0, i);
+            for(int k = 0; k <= MAX_COLUNA; k++){
+                printf(" ");
+            }
+        }
+    }
+    else{
+        clrscr();
+    }
+    textcolor(CYAN);
+    gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); printf("PERDEU MANE");
+    gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+2); printf("Voce andou %d caracteres de distancia", walkedDistance);
+    gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+4); printf("Voce matou %d inimigo(s)", enemiesKilled);
+    gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+6); printf("Em sua batalha mais dificil voce ficou com %d coracoes de vida", closestToDeath);
+    getch();
+    scene = MENU;
+    Sleep(3000);
 }
 
 void MENU_SCENE(){
@@ -399,13 +315,112 @@ void MENU_SCENE(){
             clrscr();
             gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2);
             printf(";(");
-            running = 0;
+            running = FALSE;
             Sleep(3000);
             break;
     }
 }
 
+void WORLD_SCENE(struct entity enemies[], struct player jogador){
+    textbackground(backgroundType);
+    if(!worldTurn){
+        battleTurn = 0;
+        
+        ResetEnemies(enemies, jogador);
+    }
+    else{
+        // Logica player
+        input = getch();
+
+        switch(input){
+            case 'w':
+            case 'W':
+                jogador.pos.y -= jogador.velo;
+                walkedDistance++;
+                break;
+            case 's':
+            case 'S':
+                jogador.pos.y += jogador.velo;
+                walkedDistance++;
+                break;
+            case 'a':
+            case 'A':
+                jogador.pos.x -= jogador.velo;
+                walkedDistance++;
+                break;
+            case 'd':
+            case 'D':
+                jogador.pos.x += jogador.velo;
+                walkedDistance++;
+                break;
+        }
+            
+        switch(input){
+        case 'o':
+            invencivel = !invencivel;
+            break;
+        case 'p':
+            debugMode = !debugMode;
+            break;
+        }
+
+        if      (jogador.pos.x <= 0)           {jogador.pos.x = 0;}
+        else if (jogador.pos.x >= MAX_COLUNA)  {jogador.pos.x = MAX_COLUNA;}
+        if      (jogador.pos.y <= 0)           {jogador.pos.y = 0;}
+        else if (jogador.pos.y >= MAX_LINHA-5)   {jogador.pos.y = MAX_LINHA-5;}
+
+        // Logica enemy
+        for(int i = 0; i < enemyQnt; i++){
+            int xDist = jogador.pos.x - enemies[i].pos.x;
+            int yDist = jogador.pos.y - enemies[i].pos.y;
+            int dist = sqrt(xDist*xDist + yDist*yDist); /// Distancia entre o jogador e o inimigo
+
+            if(dist > aggro_Enemy){             /// Fora da range
+                enemies[i].pos.x += (rand() % 3 - 1) * enemies[i].velo;
+                enemies[i].pos.y += (rand() % 3 - 1) * enemies[i].velo;
+                enemies[i].specie.color[enemies[i].isShiny].current = enemies[i].specie.color[enemies[i].isShiny].idle;
+            }
+            else if(dist > enemies[i].velo){         /// Dentro da range
+                if(xDist != 0){
+                    enemies[i].pos.x += (xDist / abs(xDist)) * enemies[i].velo;
+                }
+                if(yDist != 0){
+                    enemies[i].pos.y += (yDist / abs(yDist)) * enemies[i].velo;
+                }
+                enemies[i].specie.color[enemies[i].isShiny].current = enemies[i].specie.color[enemies[i].isShiny].pursuit;
+            }
+            else if(!invencivel){              /// Encostou no jogador
+                enemyIndex = i;
+                scene = BATTLE;
+                Sleep(200);
+            }
+            if      (enemies[i].pos.x <= 0)           {enemies[i].pos.x = 0;}
+            else if (enemies[i].pos.x >= MAX_COLUNA)  {enemies[i].pos.x = MAX_COLUNA;}
+            if      (enemies[i].pos.y <= 0)           {enemies[i].pos.y = 0;}
+            else if (enemies[i].pos.y >= MAX_LINHA-5)   {enemies[i].pos.y = MAX_LINHA-5;}
+        }
+    }
+
+    worldTurn++;
+
+    worldTurn = worldTurn%100;
+
+    // RENDER
+    textcolor(MAGENTA);
+    Moldura();
+
+        // RENDER Other
+        gotoxy(MAX_COLUNA,MAX_LINHA); textcolor(jogador.level+2); printf("%d", jogador.level);
+        // RENDER Entidades
+        gotoxy(jogador.pos.x, jogador.pos.y); textcolor(YELLOW); printf("@");
+        for(int i = 0; i < enemyQnt; i++){gotoxy(enemies[i].pos.x, enemies[i].pos.y); textcolor(enemies[i].specie.color[enemies[i].isShiny].current); printf("%c", enemies[i].indentifier.symbol);}
+        //
+    //
+    gotoxy(MAX_COLUNA, MAX_LINHA+1);
+}
+
 void BATTLE_SCENE(struct entity enemy, struct player jogador){
+    int attempt[2] = {0};
     // Pre Turn
     if(!battleTurn){
         textbackground(backgroundType); textcolor(CYAN);
@@ -433,7 +448,6 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
         // In Turn
         do{input = getch();}while(isCharInsideArray(input, "12"));
 
-        int attempt[2] = {0};
         switch(input){
             case '1':
                 do{input = getch();}while(isCharInsideArray(input, "1234"));
@@ -448,7 +462,7 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
         } 
 
         if(rand()%11 >= behaviour){
-            int attempt[1] = doAttempt(jogador.bag[jogador.currentEntity], enemy, rand()%4);
+            attempt[1] = doAttempt(jogador.bag[jogador.currentEntity], enemy, rand()%4);
             if(attempt[1]){strcpy(logEnemy, "O inimigo acertou o jogador, causando %d de dano");}
             else{strcpy(logEnemy, "O inimigo tentou acertar o jogador mas errou");}
         }
@@ -472,7 +486,7 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
             closestToDeath = min(closestToDeath,heartsCounter[0]);
             worldTurn = 0; battleTurn = 0;
         }
-        else if(jogador.bag[jogador.currentEntity] <= 0){scene = GAME_END;}
+        else if(jogador.bag[jogador.currentEntity].health.current <= 0){scene = GAME_END;}
         
         heartsCounter[1] = (enemy.health.current*1.0f/enemy.health.max)*16;
         heartsCounter[0] = (jogador.bag[jogador.currentEntity].health.current*1.0f/jogador.bag[jogador.currentEntity].health.max)*16;
@@ -515,8 +529,8 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
     gotoxy(4,17); printf(" \\ }---{ / ");
     gotoxy(4,18); printf("  '-...-'  ");
     //
-    PrintHearts(heartsCounter[1], {72,9});
-    PrintHearts(heartsCounter[0], {4,11});
+    PrintHearts(heartsCounter[1], 72, 9);
+    PrintHearts(heartsCounter[0], 4, 11);
 
     gotoxy(4,MAX_LINHA-2); printf(logEnemy, attempt[1]);
     gotoxy(4,MAX_LINHA-3); printf(logPlayer, attempt[0]);
@@ -527,18 +541,14 @@ void BATTLE_SCENE(struct entity enemy, struct player jogador){
     battleTurn++;
 }
 
-void ResetEnemies(struct entity enemies[MAXENEMIES]){
+void ResetEnemies(struct entity enemies[MAXENEMIES], struct player jogador){
     for(int i = 0; i < enemyQnt; i++){
         enemies[i].pos.x = (rand()%(MAX_COLUNA-1))+1;
         enemies[i].pos.y = (rand()%(MAX_LINHA-1))+1;
         enemies[i].velo = 1;
         enemies[i].level = max(1,(rand()%3)-1+jogador.level);
-        enemies[HMAX][i] = enemies[i].level * 5 + 10 + (rand()%11);
-        enemies[HCUR][i] = enemies[HMAX][i];
-        enemies[ATK][i] = enemies[i].level * 2 - 4 + (rand()%5);
-        enemies[DEF][i] = enemies[i].level * 2 + 6 + (rand()%5); 
-        enemies[DMG][i] = enemies[i].level * 2 + (rand()%5);
-        enemies[i].color.idle = CYAN;
+        enemies[i].health.max = enemies[i].level * 5 + 10 + (rand()%11);
+        enemies[i].health.current = enemies[i].health.max;
     }
 }
 
