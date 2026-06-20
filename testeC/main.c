@@ -33,6 +33,7 @@ struct entity{
     int velo;
     enum atr IV[6];
     enum atr atributes[6];
+    enum element element;
     struct nature nature;
     struct ability abilities[4];
     struct color color;
@@ -46,13 +47,19 @@ struct player{
     int velo;
 };
 
+float ElementEffectiviness(enum element attacker, enum element target){
+    if((attacker+2)%4 == target){return 2.0f;}
+else if((attacker+1)%4 == target){return 1.0f;}
+else{return 0.5f;}
+}
+
 int doAttempt(struct entity target, struct entity attacker, int abilityIndex){
     int prob = rand()%100+1;
     if(prob>attacker.abilities[abilityIndex].accuracy)
         return 0;
     int dmg = (attacker.abilities[abilityIndex].damage.value/50)*attacker.atributes[atk+attacker.abilities[abilityIndex].damage.type] - target.atributes[def+attacker.abilities[abilityIndex].damage.type];
     target.health.current -= dmg;
-    return dmg;
+    return dmg*ElementEffectiviness(attacker.abilities[abilityIndex].damage.element, target.element);
 }
 
 int isCharInsideArray(char x, char array[]){
