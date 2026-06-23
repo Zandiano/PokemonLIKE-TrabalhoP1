@@ -5,6 +5,11 @@
 #include <stdbool.h>
 #include "gconio.h"
 
+#include "enums.h"
+#include "objects.h"
+#include "specie.h"
+#include "fileHandler.h"
+
 #define MAX_COLUNA 90 /// X
 #define MAX_LINHA 25  /// Y
 #define MAXENEMIES 5
@@ -17,11 +22,6 @@
 #define euler 2.8f
 
 #define catchEq(x,lDiff,r, Diff) (24-x)/24 * pow(euler, lDiff/3) * (1/r) * 100 * (3/Diff)
-
-enum cena{MENU,WORLD_MAP,BATTLE,GAME_END};
-enum element{nullElement,normal,fire,water,eletric,grass,ice,fightining,poison,ground,flying,psychic,bug,rock,ghost,dragon,dark,steel,fairy};
-enum atr{hp, atk, spatk, def, spdef, spd};
-enum type{physical, special};
 
 const float elementMatrix[18][19] = {
 //            NUL      NOR      FIR      WAT      ELE      GRA      ICE      FIG      POI      GRD      FLY      PSY      BUG      ROC      GHO      DRA      DAR      STE      FAI
@@ -45,24 +45,6 @@ const float elementMatrix[18][19] = {
 /* FAI */ { EFFECTI, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, SUPEREF, NOTEFFE, EFFECTI }
 };
 
-struct color{enum COLORS idle; enum COLORS pursuit;};
-struct damage{int value; enum element element; enum type type;};
-struct nature{enum atr up; enum atr down;};
-struct portrait{char battle[5][5][12];};
-struct indentifier{char symbol; char name[14];};
-struct pos{int x; int y;};
-struct health{int current; int max;};
-struct ability{struct indentifier indentifier; struct damage damage; int accuracy; char logMessage[2][60];};
-
-struct specie{
-    struct indentifier indentifier;
-    struct portrait portrait;
-    int num;
-    int rarity;
-    enum atr base[6];
-    enum element element[2];
-    struct color color[2];
-};
 
 struct entity{
     struct indentifier indentifier;
@@ -256,16 +238,16 @@ void CaveiraAnim(enum COLORS background, enum COLORS text){
     }
 }
 
-struct specie allSpecies[1] = {
-    {{'P', "placeholder"}, 
-    {{
-        {"", "", "", "", ""},
-        {"", "", "", "", ""},
-        {"", "", "", "", ""},
-        {"", "", "", "", ""},
-        {"", "", "", "", ""}}},
-    0, 1, {0,0,0,0,0,0}, {fire, nullElement}, {{BLUE, YELLOW}, {RED, GREEN}}}
-};
+struct specie allSpecies[30];
+
+// {{'P', "placeholder"}, 
+// {{
+//     {"", "", "", "", ""},
+//     {"", "", "", "", ""},
+//     {"", "", "", "", ""},
+//     {"", "", "", "", ""},
+//     {"", "", "", "", ""}}},
+// 0, 1, {0,0,0,0,0,0}, {fire, nullElement}, {{BLUE, YELLOW}, {RED, GREEN}}}
 
 // Dev Wise
 bool debugMode = FALSE;
