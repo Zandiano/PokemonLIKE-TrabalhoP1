@@ -519,6 +519,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
         switch(input){
             case '1':
                 ActionBox(60,20,'+','|','=');
+                WriteBox(jogador->bag[jogador->currentEntity].abilities[0].indentifier.name, jogador->bag[jogador->currentEntity].abilities[1].indentifier.name, jogador->bag[jogador->currentEntity].abilities[2].indentifier.name, jogador->bag[jogador->currentEntity].abilities[3].indentifier.name);
                 //ClearLog(0); ClearLog(1);
                 bool haveAbilityOpen = FALSE;
                 for(int i = 0; i < 4; i++){
