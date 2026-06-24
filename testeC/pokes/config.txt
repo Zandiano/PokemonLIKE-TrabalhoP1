@@ -1,4 +1,10 @@
-placeholder
-placeholder2
-placeholder3
-placeholder4
+placeholder.specie
+placeholder2.specie
+placeholder3.specie
+placeholder4.specie
+abilities/cut.ability
+abilities/earthquake.ability
+abilities/gust.ability
+abilities/mold.ability
+abilities/punch.ability
+abilities/slash.ability

@@ -2,7 +2,6 @@
 #define SPECIE
 
 #include "objects.h"
-#define MAXSPECIES 30
 
 struct specie{
     struct indentifier indentifier;
@@ -12,6 +11,7 @@ struct specie{
     enum atr base[6];
     enum element element[2];
     struct color color[2];
+    int naturalAbilities[6];
 };
 
 #endif

@@ -3,16 +3,28 @@
 
 #include <stdio.h>
 #include <string.h>
+
 #include "specie.h"
+#include "objects.h"
 
-void OpenConfig(char filesName[MAXSPECIES][20]);
-void LoadPointers(FILE *filesPtrs[MAXSPECIES], char filesName[MAXSPECIES][20]);
-void LoadSpecies(struct specie specieArray[MAXSPECIES], FILE *filesPtrs[MAXSPECIES]);
+#define MAXFILES 30
 
-void OpenConfig(char filesName[MAXSPECIES][20]){
+void OpenConfig(char filesName[MAXFILES][64]);
+void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]);
+void LoadSpecies(struct specie specieArray[MAXFILES], FILE *filesPtrs[MAXFILES]);
+
+void LoadString(FILE *filepointer, char dest[]){
+    char buffer[64];    
+    fgets(buffer, 64, filepointer);
+    for(int i = 0; i < 64 && buffer[i] != '\0';i++){
+        dest[i] = buffer[i];
+    }
+}
+
+void OpenConfig(char filesName[MAXFILES][64]){
     FILE *configPtr = fopen("../pokes/config.txt", "r");
     if(!configPtr){printf("Config nao encontrada"); exit(1);}
-    for(int i = 0; i < MAXSPECIES; i++){
+    for(int i = 0; i < MAXFILES; i++){
         if(!fscanf(configPtr, "%s", filesName[i])){
             i--;
         }
@@ -23,19 +35,34 @@ void OpenConfig(char filesName[MAXSPECIES][20]){
     fclose(configPtr);
 }
 
-void LoadPointers(FILE *filesPtrs[MAXSPECIES], char filesName[MAXSPECIES][20]){
-    for(int i = 0; i < MAXSPECIES && filesName[i][0] != '\0'; i++){
-        char fileName[34];
-        snprintf(fileName, 34, "../pokes/%s.specie", filesName[i]);
-        filesPtrs[i] = fopen(fileName, "r");
-        printf("file: %s -> Ok\n", fileName);
+void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]){
+    for(int i = 0; i < MAXFILES && filesPtrs[0][i] != NULL; i++){filesPtrs[0][i] = NULL;}
+    for(int i = 0; i < MAXFILES && filesPtrs[1][i] != NULL; i++){filesPtrs[1][i] = NULL;}
+    for(int i = 0, relativo[2] = {0}; i < MAXFILES && filesName[i][0] != '\0'; i++){
+        char fileName[64];
+        snprintf(fileName, 64, "../pokes/%s", filesName[i]);
+
+        int divisor = 0;
+        for(int j = 0; filesName[i][j] != '\0'; j++){
+            if(filesName[i][j] == '.'){
+                divisor = filesName[i][j+1] == 'a' && filesName[i][j+2] == 'b';
+            }
+        }
+        filesPtrs[divisor][relativo[divisor]] = fopen(fileName, "r");
+        if(filesPtrs[relativo[divisor]] != NULL){
+            printf("file: %s -> Ok\n", fileName);
+            relativo[divisor]++;
+        }
+        else{
+            printf("file: %s -> ERROR\n", fileName);
+        }
     }
 }
 
-void LoadSpecies(struct specie specieArray[MAXSPECIES], FILE *filesPtrs[MAXSPECIES]){
-    for(int i = 0; i < MAXSPECIES && filesPtrs[i] != NULL; i++){
+void LoadSpecies(struct specie specieArray[MAXFILES], FILE *filesPtrs[MAXFILES]){
+    for(int i = 0; i < MAXFILES && filesPtrs[i] != NULL; i++){
         fscanf(filesPtrs[i], "%c", &specieArray[i].indentifier.symbol);
-        fscanf(filesPtrs[i], "%s", &specieArray[i].indentifier.name);
+        LoadString(filesPtrs[i], &specieArray[i].indentifier.name);
         fscanf(filesPtrs[i], "%d", &specieArray[i].num);
         fscanf(filesPtrs[i], "%d", &specieArray[i].rarity);
         fscanf(filesPtrs[i], "%d", &specieArray[i].element[0]);
@@ -49,11 +76,29 @@ void LoadSpecies(struct specie specieArray[MAXSPECIES], FILE *filesPtrs[MAXSPECI
         }
         for(int j = 0; j < 5; j++){
             for(int k = 0; k < 5; k++){
-                fscanf(filesPtrs[i], "%s", &specieArray[i].portrait.battle[j][k]);
+                LoadString(filesPtrs[i], &specieArray[i].portrait.battle[j][k]);
             }
+        }
+        for(int j = 0; j < 6; j++){
+            fscanf(filesPtrs[i], "d", &specieArray[i].naturalAbilities[j]);
         }
         fclose(filesPtrs[i]);
         printf("Specie: %s -> Ok\n", specieArray[i].indentifier.name);
+    }
+}
+
+void LoadAbilities(struct ability abilityArray[MAXFILES], FILE *filesPtrs[MAXFILES]){
+    for(int i = 0; i < MAXFILES && filesPtrs[i] != NULL; i++){
+        fscanf(filesPtrs[i], "%c", &abilityArray[i].indentifier.symbol);
+        LoadString(filesPtrs[i], &abilityArray[i].indentifier.name);
+        fscanf(filesPtrs[i], "%d", &abilityArray[i].damage.value);
+        fscanf(filesPtrs[i], "%d", &abilityArray[i].damage.element);
+        fscanf(filesPtrs[i], "%d", &abilityArray[i].damage.type);
+        fscanf(filesPtrs[i], "%d", &abilityArray[i].accuracy);
+        LoadString(filesPtrs[i], &abilityArray[i].logMessage[0]);
+        LoadString(filesPtrs[i], &abilityArray[i].logMessage[1]);
+        fclose(filesPtrs[i]);
+        printf("Ability: %s -> Ok\n", abilityArray[i].indentifier.name);
     }
 }
 #endif

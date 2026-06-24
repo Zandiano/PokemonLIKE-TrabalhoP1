@@ -9,41 +9,15 @@
 #include "objects.h"
 #include "specie.h"
 #include "fileHandler.h"
+#include "elements.h"
 
 #define MAX_COLUNA 90 /// X
 #define MAX_LINHA 25  /// Y
 #define MAXENEMIES 10
 
-#define SUPEREF 2.0f
-#define EFFECTI 1.0f
-#define NOTEFFE 0.5f
-#define IMUNITY 0.0f
-
 #define euler 2.8f
 
 #define catchEq(x,lDiff,r, Diff) (24-x)/24 * pow(euler, lDiff/3) * (1/r) * 100 * (5/Diff)
-
-const float elementMatrix[18][19] = {
-//            NUL      NOR      FIR      WAT      ELE      GRA      ICE      FIG      POI      GRD      FLY      PSY      BUG      ROC      GHO      DRA      DAR      STE      FAI
-/* NOR */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, IMUNITY, EFFECTI, EFFECTI, NOTEFFE, EFFECTI },
-/* FIR */ { EFFECTI, EFFECTI, NOTEFFE, NOTEFFE, EFFECTI, SUPEREF, SUPEREF, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, NOTEFFE, EFFECTI, SUPEREF, EFFECTI },
-/* WAT */ { EFFECTI, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, EFFECTI },
-/* ELE */ { EFFECTI, EFFECTI, EFFECTI, SUPEREF, NOTEFFE, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, IMUNITY, SUPEREF, EFFECTI, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, EFFECTI },
-/* GRA */ { EFFECTI, EFFECTI, NOTEFFE, SUPEREF, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, NOTEFFE, SUPEREF, NOTEFFE, EFFECTI, NOTEFFE, SUPEREF, EFFECTI, NOTEFFE, EFFECTI, NOTEFFE, EFFECTI },
-/* ICE */ { EFFECTI, EFFECTI, NOTEFFE, NOTEFFE, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, EFFECTI, SUPEREF, SUPEREF, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, NOTEFFE, EFFECTI },
-/* FIG */ { EFFECTI, SUPEREF, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, NOTEFFE, EFFECTI, NOTEFFE, NOTEFFE, NOTEFFE, SUPEREF, IMUNITY, EFFECTI, SUPEREF, SUPEREF, NOTEFFE },
-/* POI */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, EFFECTI, NOTEFFE, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, NOTEFFE, EFFECTI, EFFECTI, IMUNITY, SUPEREF },
-/* GRD */ { EFFECTI, EFFECTI, SUPEREF, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, EFFECTI, SUPEREF, EFFECTI, IMUNITY, EFFECTI, NOTEFFE, SUPEREF, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI },
-/* FLY */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, SUPEREF, EFFECTI, SUPEREF, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, EFFECTI },
-/* PSY */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, SUPEREF, EFFECTI, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, EFFECTI, IMUNITY, NOTEFFE, EFFECTI },
-/* BUG */ { EFFECTI, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, SUPEREF, EFFECTI, NOTEFFE, NOTEFFE, EFFECTI, NOTEFFE, SUPEREF, EFFECTI, EFFECTI, NOTEFFE, EFFECTI, SUPEREF, NOTEFFE, NOTEFFE },
-/* ROC */ { EFFECTI, EFFECTI, SUPEREF, EFFECTI, EFFECTI, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, NOTEFFE, SUPEREF, EFFECTI, SUPEREF, EFFECTI, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, EFFECTI },
-/* GHO */ { EFFECTI, IMUNITY, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, EFFECTI, SUPEREF, EFFECTI, NOTEFFE, EFFECTI, EFFECTI },
-/* DRA */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, NOTEFFE, IMUNITY },
-/* DAR */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, EFFECTI, SUPEREF, EFFECTI, NOTEFFE, EFFECTI, NOTEFFE },
-/* STE */ { EFFECTI, EFFECTI, NOTEFFE, NOTEFFE, NOTEFFE, SUPEREF, SUPEREF, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, SUPEREF },
-/* FAI */ { EFFECTI, EFFECTI, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, NOTEFFE, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, SUPEREF, SUPEREF, NOTEFFE, EFFECTI }
-};
 
 struct entity{
     struct indentifier indentifier;
@@ -100,12 +74,16 @@ float ElementEffectiviness(enum element attacker, enum element targetFirst, enum
 
 int doAttempt(struct entity *target, struct entity attacker, int abilityIndex, char log[]){
     int prob = rand()%100+1;
+    int danoBase = attacker.abilities[abilityIndex].damage.value;
+    int ataque = attacker.atributes[atk+attacker.abilities[abilityIndex].damage.type];
+    int defesa = target->atributes[def+attacker.abilities[abilityIndex].damage.type];
+
     if(prob>attacker.abilities[abilityIndex].accuracy){
-        if(attacker.abilities[abilityIndex].logMessage != NULL){strcpy(log, attacker.abilities[abilityIndex].logMessage[1]);}
+        if(attacker.abilities[abilityIndex].logMessage[1][0] != '\0'){strcpy(log, attacker.abilities[abilityIndex].logMessage[1]);}
         return 0;
     }
-    if(attacker.abilities[abilityIndex].logMessage != NULL){strcpy(log, attacker.abilities[abilityIndex].logMessage[0]);}
-    int dmg = (attacker.abilities[abilityIndex].damage.value/50)*attacker.atributes[atk+attacker.abilities[abilityIndex].damage.type] - target->atributes[def+attacker.abilities[abilityIndex].damage.type];
+    if(attacker.abilities[abilityIndex].logMessage[0][0] != '\0'){strcpy(log, attacker.abilities[abilityIndex].logMessage[0]);}
+    int dmg = (danoBase/50.0f)*ataque-defesa;
     dmg *= ElementEffectiviness(attacker.abilities[abilityIndex].damage.element, target->specie.element[0], target->specie.element[1]);
     target->health.current -= dmg;
     return dmg;
@@ -219,7 +197,7 @@ void WriteBox(char first[14], char second[14], char third[14], char fourth[14]){
 }
 
 void ClearLog(int logNum){
-    gotoxy(2,MAX_LINHA-3-logNum); printf("                                                            ");
+    gotoxy(2,MAX_LINHA-3-logNum); printf("                                                           ");
 }
 
 void CaveiraAnim(enum COLORS background, enum COLORS text){
@@ -237,9 +215,10 @@ void CaveiraAnim(enum COLORS background, enum COLORS text){
     }
 }
 
-struct specie allSpecies[MAXSPECIES] = {0};
-char filesName[MAXSPECIES][20] = {0};
-FILE *filesPtrs[MAXSPECIES] = {NULL};
+struct specie allSpecies[MAXFILES] = {0};
+struct ability allAbilities[MAXFILES] = {0};
+char filesName[MAXFILES][64] = {0};
+FILE *filesPtrs[2][MAXFILES] = {NULL};
 
 // Dev Wise
 bool debugMode = FALSE;
@@ -312,6 +291,17 @@ bool ResetEnemies(struct entity enemies[MAXENEMIES], struct player jogador){
             rndSpecie = rand()%30;
         }while(allSpecies[rndSpecie].indentifier.symbol == '\0');
         enemies[i].specie = allSpecies[rndSpecie];
+        for(int j = 0; j < 4; j++){
+            int sortedAbility = enemies->specie.naturalAbilities[rand()%6];
+            enemies[i].abilities[j].damage.value = allAbilities[sortedAbility].damage.value;
+            enemies[i].abilities[j].damage.element = allAbilities[sortedAbility].damage.element;
+            enemies[i].abilities[j].damage.type = allAbilities[sortedAbility].damage.type;
+            enemies[i].abilities[j].accuracy = allAbilities[sortedAbility].accuracy;
+            enemies[i].abilities[j].indentifier.symbol = allAbilities[sortedAbility].indentifier.symbol;
+            strcpy(enemies[i].abilities[j].indentifier.name, allAbilities[sortedAbility].indentifier.name);
+            strcpy(enemies[i].abilities[j].logMessage[0], allAbilities[sortedAbility].logMessage[0]);
+            strcpy(enemies[i].abilities[j].logMessage[1], allAbilities[sortedAbility].logMessage[1]);
+        }
         enemies[i].isShiny = !(rand()%15);
         enemies[i].indentifier.symbol = enemies[i].specie.indentifier.symbol;
         strcpy(enemies[i].indentifier.name, enemies[i].specie.indentifier.name);
@@ -529,7 +519,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
         switch(input){
             case '1':
                 ActionBox(60,20,'+','|','=');
-                ClearLog(0); ClearLog(1);
+                //ClearLog(0); ClearLog(1);
                 bool haveAbilityOpen = FALSE;
                 for(int i = 0; i < 4; i++){
                     if(jogador->bag[jogador->currentEntity].abilities[i].indentifier.symbol != '\0'){
@@ -636,7 +626,8 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
 int main(){
     OpenConfig(filesName);
     LoadPointers(filesPtrs, filesName);
-    LoadSpecies(allSpecies, filesPtrs);
+    LoadAbilities(allAbilities, filesPtrs[1]);
+    LoadSpecies(allSpecies, filesPtrs[0]);
     getch();
     srand(time(NULL));
     
