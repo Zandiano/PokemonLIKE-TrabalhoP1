@@ -9,19 +9,13 @@
 
 #define MAXFILES 30
 
-void OpenConfig(char filesName[MAXFILES][64]);
-void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]);
-void LoadSpecies(struct specie specieArray[MAXFILES], FILE *filesPtrs[MAXFILES]);
-
 void CopyString(FILE *filepointer, char dest[]){
     char buffer[64] = {0}, trash = ' ';  
     trash = fgetc(filepointer);
     if(trash != '\n'){ungetc(trash, filepointer);}
     fgets(buffer, 64, filepointer);
-    for(int i = 0; i < 64 && buffer[i] != '\0';i++){
-        if(buffer[i] == '\n'){dest[i] = '\0'; break;}
-        dest[i] = buffer[i];
-    }
+    buffer[strlen(buffer)-1] = '\0';
+    strcpy(dest, buffer);
 }
 
 void OpenConfig(char filesName[MAXFILES][64]){
