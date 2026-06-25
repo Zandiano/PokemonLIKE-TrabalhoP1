@@ -72,21 +72,22 @@ float ElementEffectiviness(enum element attacker, enum element targetFirst, enum
     return elementMatrix[attacker][targetFirst] * elementMatrix[attacker][targetSecond];
 }
 
-int doAttempt(struct entity *target, struct entity attacker, int abilityIndex, char log[]){
+int doAttempt(struct entity *target, struct ability ability, enum atr atributes[6], char log[]){
     int prob = rand()%100+1;
-    int danoBase = attacker.abilities[abilityIndex].damage.value;
-    int ataque = attacker.atributes[atk+attacker.abilities[abilityIndex].damage.type];
-    int defesa = target->atributes[def+attacker.abilities[abilityIndex].damage.type];
+    int danoBase = ability.damage.value;
+    int ataque = atributes[atk+ability.damage.type];
+    int defesa = target->atributes[def+ability.damage.type];
+    
+    float dmg = (danoBase * fmax(ataque/100,1)- fmax(defesa/40,1)) * ElementEffectiviness(ability.damage.element, target->specie.element[0], target->specie.element[1]);
 
-    if(prob>attacker.abilities[abilityIndex].accuracy){
-        if(attacker.abilities[abilityIndex].logMessage[1][0] != '\0'){strcpy(log, attacker.abilities[abilityIndex].logMessage[1]);}
+    if(prob>ability.accuracy || dmg <= 0){
+        if(ability.logMessage[1][0] != '\0'){strcpy(log, ability.logMessage[1]);}
         return 0;
     }
-    if(attacker.abilities[abilityIndex].logMessage[0][0] != '\0'){strcpy(log, attacker.abilities[abilityIndex].logMessage[0]);}
-    int dmg = (danoBase/50.0f)*ataque-defesa;
-    dmg *= ElementEffectiviness(attacker.abilities[abilityIndex].damage.element, target->specie.element[0], target->specie.element[1]);
+    if(ability.logMessage[0][0] != '\0'){strcpy(log, ability.logMessage[0]);}
+    
     target->health.current -= dmg;
-    return dmg;
+    return (int)dmg;
 }
 
 bool isCharInsideArray(char x, char array[]){
@@ -274,13 +275,13 @@ void Debug(struct player jogador){
 
 void EntityView(struct entity entities[4], int x[2], int y[2]){
     gotoxy(x[0], y[0]);
-    printf("1. %s : %d/%d", entities[0].indentifier.name, entities[0].health.current, entities[0].health.max);
+    printf("1. %s (%d) : %d/%d", entities[0].indentifier.name, entities[0].level, entities[0].health.current, entities[0].health.max);
     gotoxy(x[1], y[0]);
-    printf("2. %s : %d/%d", entities[1].indentifier.name, entities[1].health.current, entities[1].health.max);
+    printf("2. %s (%d) : %d/%d", entities[1].indentifier.name, entities[1].level, entities[1].health.current, entities[1].health.max);
     gotoxy(x[0], y[1]);
-    printf("3. %s : %d/%d", entities[2].indentifier.name, entities[2].health.current, entities[2].health.max);
+    printf("3. %s (%d) : %d/%d", entities[2].indentifier.name, entities[2].level, entities[2].health.current, entities[2].health.max);
     gotoxy(x[1], y[1]);
-    printf("4. %s : %d/%d", entities[3].indentifier.name, entities[3].health.current, entities[3].health.max);
+    printf("4. %s (%d) : %d/%d", entities[3].indentifier.name, entities[3].level, entities[3].health.current, entities[3].health.max);
 
 }
 
@@ -530,7 +531,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
                 }
                 if(!haveAbilityOpen){strcpy(logs[0], "Nao possui ataques disponiveis"); break;}
                 do{input = getch();}while(!isCharInsideArray(input, "1234") || jogador->bag[jogador->currentEntity].abilities[(int)input - '1'].indentifier.symbol == '\0');
-                attempt[0] = doAttempt(enemy, jogador->bag[jogador->currentEntity], (int)input - '1', logs[0]);
+                attempt[0] = doAttempt(enemy, jogador->bag[jogador->currentEntity].abilities[(int)input - '1'], jogador->bag[jogador->currentEntity].atributes, logs[0]);
                 break;
             case '2':
                 ActionBox(60,20,'+','|','=');
@@ -552,6 +553,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
                     scene = WORLD_MAP;
                     battleTurn = 0; worldTurn = 0;
                     jogador->level++;
+                    jogador->bag[jogador->currentEntity].level++;
                 }
                 else{strcpy(logs[0], "Nao foi capturado.");}
                 break;
@@ -574,7 +576,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
                     randomEnemyAbility = randomEnemyAbility%4;
                 }
                 if(!haveAbilityOpen){strcpy(logs[1], "O inimigo nao possui ataques disponiveis");}
-                else{attempt[1] = doAttempt(&jogador->bag[jogador->currentEntity], *enemy, rand()%4, logs[1]);}
+                else{attempt[1] = doAttempt(&jogador->bag[jogador->currentEntity], enemy->abilities[rand()%4], enemy->atributes, logs[1]);}
             }
             else{
                 if(!(rand()%10)){

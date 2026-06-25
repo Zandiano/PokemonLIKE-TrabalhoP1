@@ -14,12 +14,13 @@ void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]);
 void LoadSpecies(struct specie specieArray[MAXFILES], FILE *filesPtrs[MAXFILES]);
 
 void CopyString(FILE *filepointer, char dest[]){
-    char buffer[64];    
-    fgetc(filepointer);
+    char buffer[64] = {0}, trash = ' ';  
+    trash = fgetc(filepointer);
+    if(trash != '\n'){ungetc(trash, filepointer);}
     fgets(buffer, 64, filepointer);
     for(int i = 0; i < 64 && buffer[i] != '\0';i++){
-        dest[i] = buffer[i];
         if(buffer[i] == '\n'){dest[i] = '\0'; break;}
+        dest[i] = buffer[i];
     }
 }
 
