@@ -17,7 +17,8 @@
 
 #define euler 2.8f
 
-#define catchEq(x,lDiff,r, Diff) (24-x)/24 * pow(euler, lDiff/3) * (1/r) * 100 * (5/Diff)
+#define catchEq(hearts, levelDiff, rarity, Difficulty) (24 - hearts) * pow(euler, levelDiff/3) * 125 / Difficulty * rarity * 6
+#define atrEq(constant, base, IV, level) constant*base*(IV/100.0f+1)*(level/40.0f+1)
 
 struct entity{
     struct indentifier indentifier;
@@ -78,7 +79,7 @@ int doAttempt(struct entity *target, struct ability ability, enum atr atributes[
     int ataque = atributes[atk+ability.damage.type];
     int defesa = target->atributes[def+ability.damage.type];
     
-    float dmg = (danoBase * fmax(ataque/100,1)- fmax(defesa/40,1)) * ElementEffectiviness(ability.damage.element, target->specie.element[0], target->specie.element[1]);
+    float dmg = danoBase * fmax(ataque/100,1) / fmax(defesa/100,1) * ElementEffectiviness(ability.damage.element, target->specie.element[0], target->specie.element[1]);
 
     if(prob>ability.accuracy || dmg <= 0){
         if(ability.logMessage[1][0] != '\0'){strcpy(log, ability.logMessage[1]);}
@@ -285,42 +286,74 @@ void EntityView(struct entity entities[4], int x[2], int y[2]){
 
 }
 
-bool ResetEnemies(struct entity enemies[MAXENEMIES], struct player jogador){
+void UpdateEntity(struct entity *entity){
+    entity->atributes[hp] = (int)atrEq(1.5f, entity->specie.base[hp], entity->IV[hp], entity->level);
+    entity->atributes[atk] = (int)atrEq(1, entity->specie.base[atk], entity->IV[atk], entity->level);
+    entity->atributes[spatk] = (int)atrEq(1, entity->specie.base[spatk], entity->IV[spatk], entity->level);
+    entity->atributes[def] = (int)atrEq(1.2f, entity->specie.base[def], entity->IV[def], entity->level);
+    entity->atributes[spdef] = (int)atrEq(1.2f, entity->specie.base[spdef], entity->IV[spdef], entity->level);
+    entity->atributes[spd] = (int)atrEq(0.5f, entity->specie.base[spd], entity->IV[spd], entity->level);
+    
+    entity->health.max = entity->atributes[hp];
+    entity->health.current = entity->health.max;
+}
+
+void LevelUpEntity(struct entity *entity){
+    entity->level++;
+    UpdateEntity(entity);
+}
+
+bool ResetEntity(struct entity *entity, struct player jogador){
     for(int i = 0; i < enemyQnt; i++){
         int rndSpecie = rand()%30;
         do{
             rndSpecie = rand()%30;
         }while(allSpecies[rndSpecie].indentifier.symbol == '\0');
-        enemies[i].specie = allSpecies[rndSpecie];
+        entity->specie = allSpecies[rndSpecie];
         for(int j = 0; j < 4; j++){
-            int sortedAbility = enemies->specie.naturalAbilities[rand()%6];
-            enemies[i].abilities[j].damage.value = allAbilities[sortedAbility].damage.value;
-            enemies[i].abilities[j].damage.element = allAbilities[sortedAbility].damage.element;
-            enemies[i].abilities[j].damage.type = allAbilities[sortedAbility].damage.type;
-            enemies[i].abilities[j].accuracy = allAbilities[sortedAbility].accuracy;
-            enemies[i].abilities[j].indentifier.symbol = allAbilities[sortedAbility].indentifier.symbol;
-            strcpy(enemies[i].abilities[j].indentifier.name, allAbilities[sortedAbility].indentifier.name);
-            strcpy(enemies[i].abilities[j].logMessage[0], allAbilities[sortedAbility].logMessage[0]);
-            strcpy(enemies[i].abilities[j].logMessage[1], allAbilities[sortedAbility].logMessage[1]);
+            int sortedAbility = entity->specie.naturalAbilities[rand()%6];
+            entity->abilities[j].damage.value = allAbilities[sortedAbility].damage.value;
+            entity->abilities[j].damage.element = allAbilities[sortedAbility].damage.element;
+            entity->abilities[j].damage.type = allAbilities[sortedAbility].damage.type;
+            entity->abilities[j].accuracy = allAbilities[sortedAbility].accuracy;
+            entity->abilities[j].indentifier.symbol = allAbilities[sortedAbility].indentifier.symbol;
+            strcpy(entity->abilities[j].indentifier.name, allAbilities[sortedAbility].indentifier.name);
+            strcpy(entity->abilities[j].logMessage[0], allAbilities[sortedAbility].logMessage[0]);
+            strcpy(entity->abilities[j].logMessage[1], allAbilities[sortedAbility].logMessage[1]);
         }
-        enemies[i].isShiny = !(rand()%15);
-        enemies[i].indentifier.symbol = enemies[i].specie.indentifier.symbol;
-        strcpy(enemies[i].indentifier.name, enemies[i].specie.indentifier.name);
-        enemies[i].pos.x = (rand()%(MAX_COLUNA-1))+1;
-        enemies[i].pos.y = (rand()%(MAX_LINHA-1))+1;
-        enemies[i].velo = 1;
-        enemies[i].level = max(1,(rand()%3)-1+jogador.level);
-        enemies[i].health.max = enemies[i].level * 5 + 10 + (rand()%11);
-        enemies[i].health.current = enemies[i].health.max;
+        entity->isShiny = !(rand()%15);
+        entity->indentifier.symbol = entity->specie.indentifier.symbol;
+        strcpy(entity->indentifier.name, entity->specie.indentifier.name);
+        entity->pos.x = (rand()%(MAX_COLUNA-1))+1;
+        entity->pos.y = (rand()%(MAX_LINHA-1))+1;
+        entity->velo = 1;
+        entity->level = max(1,(rand()%3)-1+jogador.level);
+        UpdateEntity(entity);
     }
     return TRUE;
 }
 
-void Init(){
+bool ResetEnemies(struct entity enemies[], struct player jogador){
+    for(int i = 0; i < MAXENEMIES; i++){
+        ResetEntity(&enemies[i], jogador);
+    }
+}
+
+void Init(struct player *jogador){
     // Scores
     walkedDistance = 0;
     enemiesKilled = 0;
     closestToDeath = 16;
+
+    worldTurn = 0;
+    battleTurn = 0;
+
+    jogador->pos.x = rand()%MAX_COLUNA;
+    jogador->pos.y = rand()%MAX_LINHA;
+
+    jogador->level = 0;
+    memset(jogador->bag, 0, sizeof(jogador->bag[0])*4);
+    ResetEntity(&jogador->bag[0], *jogador);
 }
 
 void END_SCENE(){
@@ -334,7 +367,7 @@ void END_SCENE(){
     Sleep(3000);
 }
 
-void MENU_SCENE(){
+void MENU_SCENE(struct player *jogador){
     clrscr();
     textcolor(MAGENTA);
     printf("+========================================================================================+\n");
@@ -374,7 +407,7 @@ void MENU_SCENE(){
     switch(input){
         case '1':
             clrscr();
-            Init();
+            Init(jogador);
             gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2);
             printf("CARREGANDO");
             for(int i = 0; i < 3; i++){
@@ -506,6 +539,8 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
     int attempt[2] = {0};
     char logs[2][60] = {"",""};
     float behaviour = 0.0f;
+    bool win = FALSE;
+    bool forceSwitch = FALSE;
     // Pre Turn
     if(!battleTurn){
         CaveiraAnim(backgroundType, CYAN);
@@ -516,7 +551,13 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
     }
     else{
         // In Turn
-        do{input = getch();}while(!isCharInsideArray(input, "1234"));
+        if(forceSwitch){
+            input = '2';
+        }
+        else{
+            do{input = getch();}while(!isCharInsideArray(input, "1234"));
+        }
+
         switch(input){
             case '1':
                 ActionBox(60,20,'+','|','=');
@@ -538,8 +579,9 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
                 ClearLog(0); ClearLog(1);
                 gotoxy(4,MAX_LINHA-3); printf("Selecione qual sera substituido");
                 WriteBox(jogador->bag[0].indentifier.name, jogador->bag[1].indentifier.name, jogador->bag[2].indentifier.name, jogador->bag[3].indentifier.name);
-                do{input = getch();}while(!isCharInsideArray(input, "1234") || jogador->bag[(int)input - '1'].indentifier.symbol == '\0');
+                do{input = getch();}while(!isCharInsideArray(input, "1234") || jogador->bag[(int)input - '1'].indentifier.symbol == '\0' || jogador->bag[(int)input - '1'].health.current <= 0);
                 jogador->currentEntity = (int)input - '1';
+                forceSwitch = FALSE;
                 break;
             case '3':
                 ActionBox(60,20,'+','|','=');
@@ -550,10 +592,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
                 if(CatchEntity(jogador, *enemy, heartsCounter[1],(int)input - '1', dificuldade, cheatMode)){
                     strcpy(logs[0], "Capturado com sucesso");
                     enemy->inactive = TRUE;
-                    scene = WORLD_MAP;
-                    battleTurn = 0; worldTurn = 0;
-                    jogador->level++;
-                    jogador->bag[jogador->currentEntity].level++;
+                    win = TRUE;
                 }
                 else{strcpy(logs[0], "Nao foi capturado.");}
                 break;
@@ -562,7 +601,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
                 else{strcpy(logs[0], "O jogador tentou fugir da batalha mas nao conseguiu");} 
                 break;
         } 
-        if(enemy->inactive){}
+        if(enemy->health.current <= 0 || enemy->inactive){}
         else{
             if(rand()%11 >= behaviour){
                 int randomEnemyAbility = rand()%4;
@@ -591,14 +630,28 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
         }
 
         // Post Turn
-        if(enemy->health.current <= 0){
+        if(enemy->health.current <= 0 || win){
             scene = WORLD_MAP;
             jogador->level++;
-            enemiesKilled++;
+            UpdateEntity(&jogador->bag[jogador->currentEntity]);
+            enemiesKilled += enemy->health.current <= 0;
             closestToDeath = min(closestToDeath,heartsCounter[0]);
             worldTurn = 0; battleTurn = 0;
         }
-        else if(jogador->bag[jogador->currentEntity].health.current <= 0){scene = GAME_END;}
+        else if(jogador->bag[jogador->currentEntity].health.current <= 0){
+            bool hasEntityLeft = FALSE;
+            for(int i = 0; i < 4; i++){
+                if(jogador->bag[i].health.current > 0){
+                    hasEntityLeft = TRUE;
+                }
+            }
+            if(hasEntityLeft){
+                forceSwitch = TRUE;
+            }
+            else{
+                scene = GAME_END;
+            }
+        }
         
         heartsCounter[1] = (enemy->health.current*1.0f/enemy->health.max)*16;
         heartsCounter[0] = (jogador->bag[jogador->currentEntity].health.current*1.0f/jogador->bag[jogador->currentEntity].health.max)*16;
@@ -643,11 +696,12 @@ int main(){
         Debug(jogador);
         switch(scene){
             case MENU:
-                MENU_SCENE();
+                MENU_SCENE(&jogador);
                 break;
+
             case WORLD_MAP:
                 WORLD_SCENE(enemies, &jogador);
-            break;
+                break;
 
             case BATTLE:
                 BATTLE_SCENE(&enemies[enemyIndex], &jogador);
