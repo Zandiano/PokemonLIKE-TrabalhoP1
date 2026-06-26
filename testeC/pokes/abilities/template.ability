@@ -1,0 +1,8 @@
+Symbol (Char)
+Name (String [13])
+Damage Value (Int)
+Damage Element (Int)
+Damage Type (Physical/Special)
+Accuracy (Int)
+Success Log (String [59])
+Failure Log (String [59])

@@ -333,7 +333,7 @@ bool ResetEntity(struct entity *entity, struct player jogador){
     return TRUE;
 }
 
-bool ResetEnemies(struct entity enemies[], struct player jogador){
+void ResetEnemies(struct entity enemies[], struct player jogador){
     for(int i = 0; i < MAXENEMIES; i++){
         ResetEntity(&enemies[i], jogador);
     }
@@ -633,7 +633,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
         if(enemy->health.current <= 0 || win){
             scene = WORLD_MAP;
             jogador->level++;
-            UpdateEntity(&jogador->bag[jogador->currentEntity]);
+            LevelUpEntity(&jogador->bag[jogador->currentEntity]);
             enemiesKilled += enemy->health.current <= 0;
             closestToDeath = min(closestToDeath,heartsCounter[0]);
             worldTurn = 0; battleTurn = 0;

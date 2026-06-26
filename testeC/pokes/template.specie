@@ -1,0 +1,47 @@
+Simbolo (Char)
+Nome (String [13])
+Numero (Int)
+Raridade (Int [1-10])
+Elemento1 (Int [enum element])
+Elemento2 (Int [enum element])
+Cor Idle (Int [enum color])
+Cor Pursuit (Int [enum color])
+Cor Idle (Int [enum color]) [Shiny]
+Cor Pursuit (Int [enum color]) [Shiny]
+Hp_Base
+Atk_Base
+SpAtk_Base
+Def_Base
+SpDef_Base
+Spd_Base
+L1 (String [10]) (Etapa 1)
+L2 (String [10]) (Etapa 1)
+L3 (String [10]) (Etapa 1)
+L4 (String [10]) (Etapa 1)
+L5 (String [10]) (Etapa 1)
+L1 (String [10]) (Etapa 2)
+L2 (String [10]) (Etapa 2)
+L3 (String [10]) (Etapa 2)
+L4 (String [10]) (Etapa 2)
+L5 (String [10]) (Etapa 2)
+L1 (String [10]) (Etapa 3)
+L2 (String [10]) (Etapa 3)
+L3 (String [10]) (Etapa 3)
+L4 (String [10]) (Etapa 3)
+L5 (String [10]) (Etapa 3)
+L1 (String [10]) (Etapa 1)
+L2 (String [10]) (Etapa 4)
+L3 (String [10]) (Etapa 4)
+L4 (String [10]) (Etapa 4)
+L5 (String [10]) (Etapa 4)
+L1 (String [10]) (Etapa 5)
+L2 (String [10]) (Etapa 5)
+L3 (String [10]) (Etapa 5)
+L4 (String [10]) (Etapa 5)
+L5 (String [10]) (Etapa 5)
+Habilidades_Possiveis (0)
+Habilidades_Possiveis (1)
+Habilidades_Possiveis (2)
+Habilidades_Possiveis (3)
+Habilidades_Possiveis (4)
+Habilidades_Possiveis (5)
