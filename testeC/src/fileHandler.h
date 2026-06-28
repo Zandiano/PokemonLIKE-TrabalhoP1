@@ -41,7 +41,7 @@ void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]){
         int divisor = 0;
         for(int j = 0; filesName[i][j] != '\0'; j++){
             if(filesName[i][j] == '.'){
-                divisor = filesName[i][j+1] == 'a' && filesName[i][j+2] == 'b';
+                divisor = filesName[i][j+1] == 'a' && filesName[i][j+2] == 'b' && filesName[i][j+3] == 'i';
             }
         }
         filesPtrs[divisor][relativo[divisor]] = fopen(fileName, "r");

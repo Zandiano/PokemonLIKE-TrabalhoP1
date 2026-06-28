@@ -42,6 +42,7 @@ struct player{
     int currentEntity;
     int level;
     int velo;
+    bool defeated;
 };
 
 bool CopyEntity(struct entity *dest, struct entity from){
@@ -351,12 +352,13 @@ void Init(struct player *jogador){
     jogador->pos.x = rand()%MAX_COLUNA;
     jogador->pos.y = rand()%MAX_LINHA;
 
+    jogador->defeated = FALSE;
     jogador->level = 0;
     memset(jogador->bag, 0, sizeof(jogador->bag[0])*4);
     ResetEntity(&jogador->bag[0], *jogador);
 }
 
-void END_SCENE(){
+void END_SCENE(struct player *jogador){
     textcolor(CYAN);
     gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2); printf("PERDEU MANE");
     gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+2); printf("Voce andou %d caracteres de distancia", walkedDistance);
@@ -364,6 +366,7 @@ void END_SCENE(){
     gotoxy(MAX_COLUNA/2-30, MAX_LINHA/2+6); printf("Em sua batalha mais dificil voce ficou com %d coracoes de vida", closestToDeath);
     getch();
     scene = MENU;
+    jogador->defeated = TRUE;
     Sleep(3000);
 }
 
@@ -407,7 +410,9 @@ void MENU_SCENE(struct player *jogador){
     switch(input){
         case '1':
             clrscr();
-            Init(jogador);
+            if(jogador->defeated){
+                Init(jogador);
+            }
             gotoxy(MAX_COLUNA/2-10, MAX_LINHA/2);
             printf("CARREGANDO");
             for(int i = 0; i < 3; i++){
@@ -480,7 +485,9 @@ void WORLD_SCENE(struct entity enemies[], struct player *jogador){
                 break;
             case 'R':
                 worldTurn = -1;
-                break;    
+                break;
+            case 'M':
+                scene = MENU;
         }
 
         if      (jogador->pos.x <= 0)           {jogador->pos.x = 0;}
@@ -546,7 +553,8 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
         CaveiraAnim(backgroundType, CYAN);
         behaviour = (jogador->level - enemy->level)*4;
         jogador->currentEntity = 0;
-        
+        enemy->inactive = FALSE;
+        jogador->bag[jogador->currentEntity].inactive = FALSE;
         battleTurn++;
     }
     else{
@@ -687,7 +695,7 @@ int main(){
     getch();
     srand(time(NULL));
     
-    struct player jogador = {{45,13}, {0}, 0, 1, 2};
+    struct player jogador = {{45,13}, {0}, 0, 1, 2, FALSE};
     struct entity enemies[MAXENEMIES] = {0};
 
     ResetEnemies(enemies, jogador);
@@ -708,7 +716,7 @@ int main(){
                 break;
 
             case GAME_END:
-                END_SCENE();
+                END_SCENE(&jogador);
                 break;
             }
     }
