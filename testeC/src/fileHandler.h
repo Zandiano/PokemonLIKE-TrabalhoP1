@@ -45,7 +45,7 @@ void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]){
             }
         }
         filesPtrs[divisor][relativo[divisor]] = fopen(fileName, "r");
-        if(filesPtrs[relativo[divisor]] != NULL){
+        if(filesPtrs[divisor][relativo[divisor]] != NULL){
             printf("file: %s -> Ok\n", fileName);
             relativo[divisor]++;
         }

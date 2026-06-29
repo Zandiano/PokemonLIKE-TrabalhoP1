@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
-#include <stdbool.h>
+#include "bool.h"
 #include "gconio.h"
 
 #include "enums.h"
@@ -44,6 +44,14 @@ struct player{
     int velo;
     bool defeated;
 };
+
+void CalcPlayerLevel(struct player *jogador){
+    int i, media = 0;
+    for(i = 0; jogador->bag[i].indentifier.symbol != '\0'; i++){
+        media += jogador->bag[i].level;
+    }
+    jogador->level = media/(i+1)+1;
+}
 
 bool CopyEntity(struct entity *dest, struct entity from){
     dest->indentifier = from.indentifier;
@@ -428,11 +436,11 @@ void MENU_SCENE(struct player *jogador){
             gotoxy(0,1);
             printf("Dificuldade - [Default: 3] (1-10): ");
             gotoxy(0,2);
-            printf("CheatMode - [Default: 0] (0-1): ");
+            printf("CheatMode -1 [Default: 0] (0-1): ");
             gotoxy(40,0); scanf("%d", &enemyQnt);
             gotoxy(40,1); scanf("%d", &dificuldade);
             gotoxy(40,2); scanf("%d", &cheatMode);
-            enemyQnt = min(max(enemyQnt,1),5);
+            enemyQnt = min(max(enemyQnt,1),10);
             dificuldade = min(max(dificuldade,1),10);
             break;
             
@@ -452,6 +460,7 @@ void WORLD_SCENE(struct entity enemies[], struct player *jogador){
         battleTurn = 0;
         
         ResetEnemies(enemies, *jogador);
+        CalcPlayerLevel(jogador);
     }
     else{
         // Logica player
@@ -551,7 +560,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
     // Pre Turn
     if(!battleTurn){
         CaveiraAnim(backgroundType, CYAN);
-        behaviour = (jogador->level - enemy->level)*4;
+        behaviour = (jogador->bag[jogador->currentEntity].level - enemy->level)*4;
         jogador->currentEntity = 0;
         enemy->inactive = FALSE;
         jogador->bag[jogador->currentEntity].inactive = FALSE;
@@ -609,6 +618,10 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
                 else{strcpy(logs[0], "O jogador tentou fugir da batalha mas nao conseguiu");} 
                 break;
         } 
+
+        
+        behaviour = min((jogador->bag[jogador->currentEntity].level-enemy->level) * 3 + (16.0f/heartsCounter[0]) * 2, 9);
+
         if(enemy->health.current <= 0 || enemy->inactive){}
         else{
             if(rand()%11 >= behaviour){
@@ -640,7 +653,7 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
         // Post Turn
         if(enemy->health.current <= 0 || win){
             scene = WORLD_MAP;
-            jogador->level++;
+            // jogador->level++;
             LevelUpEntity(&jogador->bag[jogador->currentEntity]);
             enemiesKilled += enemy->health.current <= 0;
             closestToDeath = min(closestToDeath,heartsCounter[0]);
@@ -664,7 +677,6 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
         heartsCounter[1] = (enemy->health.current*1.0f/enemy->health.max)*16;
         heartsCounter[0] = (jogador->bag[jogador->currentEntity].health.current*1.0f/jogador->bag[jogador->currentEntity].health.max)*16;
 
-        behaviour = min((jogador->level-enemy->level) * 3 + (16.0f/heartsCounter[0]) * 2, 9);
     }
 
     // RENDER

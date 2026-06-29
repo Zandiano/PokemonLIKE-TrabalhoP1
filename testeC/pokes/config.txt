@@ -1,6 +1,7 @@
 ferrospine.specie
 gravitoncore.specie
 luxpara.specie
+nullworm.specie
 voraxsee.specie
 abilities/boladefogo.ability
 abilities/brilhofeerico.ability
