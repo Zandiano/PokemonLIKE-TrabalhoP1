@@ -45,6 +45,37 @@ struct player{
     bool defeated;
 };
 
+struct specie allSpecies[MAXFILES] = {0};
+struct ability allAbilities[MAXFILES] = {0};
+char filesName[MAXFILES][64] = {0};
+FILE *filesPtrs[2][MAXFILES] = {NULL};
+
+// Dev Wise
+bool debugMode = FALSE;
+bool invencivel = FALSE;
+bool cheatMode = FALSE;
+
+// INIT
+int scene = MENU;
+bool running = TRUE;
+int worldTurn = 0;
+int backgroundType = BLACK;
+int enemyIndex = -1;
+int enemyQnt = 2;
+int dificuldade = 2;
+char input = ' ';
+
+// Battle
+int aggro_Enemy = 12;
+int battleTurn = 0;
+int heartsCounter[2] = {16,16};
+bool forceSwitch = FALSE;
+
+// Scores
+int walkedDistance = 0;
+int enemiesKilled = 0;
+int closestToDeath = 16;
+
 void CalcPlayerLevel(struct player *jogador){
     int i, media = 0;
     for(i = 0; jogador->bag[i].indentifier.symbol != '\0'; i++){
@@ -67,7 +98,9 @@ bool CopyEntity(struct entity *dest, struct entity from){
     }
     dest->specie = from.specie;
     dest->nature = from.nature;
-    for(int i = 0; i < 4; i++){dest->abilities[i] = from.abilities[i];}
+    for(int i = 0; i < 4; i++){
+        dest->abilities[i] = from.abilities[i];
+    }
     return TRUE;
 }
 
@@ -91,10 +124,15 @@ int doAttempt(struct entity *target, struct ability ability, enum atr atributes[
     float dmg = danoBase * fmax(ataque/100,1) / fmax(defesa/100,1) * ElementEffectiviness(ability.damage.element, target->specie.element[0], target->specie.element[1]);
 
     if(prob>ability.accuracy || dmg <= 0){
-        if(ability.logMessage[1][0] != '\0'){strcpy(log, ability.logMessage[1]);}
+        if(ability.logMessage[1][0] != '\0'){
+            strcpy(log, ability.logMessage[1]);
+        }
         return 0;
     }
-    if(ability.logMessage[0][0] != '\0'){strcpy(log, ability.logMessage[0]);}
+
+    if(ability.logMessage[0][0] != '\0'){
+        strcpy(log, ability.logMessage[0]);
+    }
     
     target->health.current -= dmg;
     return (int)dmg;
@@ -130,22 +168,28 @@ void PrintHearts(int hearts, int x, int y){
                 break;
         }
     }
-
 }
 
 void PrintPortrait(int x, int y, struct portrait portrait, int currentHeart){
-    for(int i = 0; i < 5; i++){gotoxy(x,y+i); printf("%s", portrait.battle[(int)(currentHeart/4)][i]);}
+    for(int i = 0; i < 5; i++){
+        gotoxy(x,y+i); 
+        printf("%s", portrait.battle[(int)(currentHeart/4)][i]);
+    }
 }
 
 void ActionBox(int middle, int height, char corner, char vertical, char horizontal){
     gotoxy(0,0);
     for(int i = height; i <= MAX_LINHA; i++){
         if(i == height || i == MAX_LINHA){
-            for(int k = middle; k <= MAX_COLUNA; k++){gotoxy(k,i); printf("%c",horizontal);}
+            for(int k = middle; k <= MAX_COLUNA; k++){
+                gotoxy(k,i); printf("%c",horizontal);
+            }
         }
         else{
             for(int k = middle; k <= MAX_COLUNA; k++){
-                if(k == middle || k == MAX_COLUNA){gotoxy(k,i); printf("%c",vertical);}
+                if(k == middle || k == MAX_COLUNA){
+                    gotoxy(k,i); printf("%c",vertical);
+                }
                 else{printf(" ");}
             }
         }
@@ -161,11 +205,15 @@ void ActionBar(int middle, int height, char corner, char vertical, char horizont
     for(int i = height; i <= MAX_LINHA; i++){
         gotoxy(0,i);
         if(i == height || i == MAX_LINHA){
-            for(int k = 0; k <= MAX_COLUNA; k++){printf("%c",horizontal);}
+            for(int k = 0; k <= MAX_COLUNA; k++){
+                printf("%c",horizontal);
+            }
         }
         else{
             for(int k = 0; k <= MAX_COLUNA; k++){
-                if(k == 0 || k == MAX_COLUNA){printf("%c",vertical);}
+                if(k == 0 || k == MAX_COLUNA){
+                    printf("%c",vertical);
+                }
                 else{printf(" ");}
             }
         }
@@ -183,16 +231,22 @@ void Moldura(bool isActionBarActive, char corner, char vertical, char horizontal
     for(int i = 0; i <= MAX_LINHA; i++){
         gotoxy(0,i);
         if(i == 0 || i == MAX_LINHA){
-            for(int k = 0; k <= MAX_COLUNA; k++){printf("%c",horizontal);}
+            for(int k = 0; k <= MAX_COLUNA; k++){
+                printf("%c",horizontal);
+            }
         }
         else{
             for(int k = 0; k <= MAX_COLUNA; k++){
-                if(k == 0 || k == MAX_COLUNA){printf("%c",vertical);}
+                if(k == 0 || k == MAX_COLUNA){
+                    printf("%c",vertical);
+                }
                 else{printf(" ");}
             }
         }
     }
-    if(isActionBarActive){ActionBar(60,20, corner, vertical, horizontal);}
+    if(isActionBarActive){
+        ActionBar(60,20, corner, vertical, horizontal);
+    }
     gotoxy(0,0); printf("%c",corner);
     gotoxy(0,MAX_LINHA); printf("%c",corner);
     gotoxy(MAX_COLUNA,0); printf("%c",corner);
@@ -226,35 +280,17 @@ void CaveiraAnim(enum COLORS background, enum COLORS text){
     }
 }
 
-struct specie allSpecies[MAXFILES] = {0};
-struct ability allAbilities[MAXFILES] = {0};
-char filesName[MAXFILES][64] = {0};
-FILE *filesPtrs[2][MAXFILES] = {NULL};
+void EntityView(struct entity entities[4], int x[2], int y[2]){
+    gotoxy(x[0], y[0]);
+    printf("1. %s (%d) : %d/%d", entities[0].indentifier.name, entities[0].level, entities[0].health.current, entities[0].health.max);
+    gotoxy(x[1], y[0]);
+    printf("2. %s (%d) : %d/%d", entities[1].indentifier.name, entities[1].level, entities[1].health.current, entities[1].health.max);
+    gotoxy(x[0], y[1]);
+    printf("3. %s (%d) : %d/%d", entities[2].indentifier.name, entities[2].level, entities[2].health.current, entities[2].health.max);
+    gotoxy(x[1], y[1]);
+    printf("4. %s (%d) : %d/%d", entities[3].indentifier.name, entities[3].level, entities[3].health.current, entities[3].health.max);
 
-// Dev Wise
-bool debugMode = FALSE;
-bool invencivel = FALSE;
-bool cheatMode = FALSE;
-
-// INIT
-int scene = MENU;
-bool running = TRUE;
-int worldTurn = 0;
-int backgroundType = BLACK;
-int enemyIndex = -1;
-int enemyQnt = 2;
-int dificuldade = 2;
-char input = ' ';
-
-// Battle
-int aggro_Enemy = 12;
-int battleTurn = 0;
-int heartsCounter[2] = {16,16};
-
-// Scores
-int walkedDistance = 0;
-int enemiesKilled = 0;
-int closestToDeath = 16;
+}
 
 void Debug(struct player jogador){
     if(debugMode){
@@ -283,18 +319,6 @@ void Debug(struct player jogador){
     }
 }
 
-void EntityView(struct entity entities[4], int x[2], int y[2]){
-    gotoxy(x[0], y[0]);
-    printf("1. %s (%d) : %d/%d", entities[0].indentifier.name, entities[0].level, entities[0].health.current, entities[0].health.max);
-    gotoxy(x[1], y[0]);
-    printf("2. %s (%d) : %d/%d", entities[1].indentifier.name, entities[1].level, entities[1].health.current, entities[1].health.max);
-    gotoxy(x[0], y[1]);
-    printf("3. %s (%d) : %d/%d", entities[2].indentifier.name, entities[2].level, entities[2].health.current, entities[2].health.max);
-    gotoxy(x[1], y[1]);
-    printf("4. %s (%d) : %d/%d", entities[3].indentifier.name, entities[3].level, entities[3].health.current, entities[3].health.max);
-
-}
-
 void UpdateEntity(struct entity *entity){
     entity->atributes[hp] = (int)atrEq(1.5f, entity->specie.base[hp], entity->IV[hp], entity->level);
     entity->atributes[atk] = (int)atrEq(1, entity->specie.base[atk], entity->IV[atk], entity->level);
@@ -313,38 +337,309 @@ void LevelUpEntity(struct entity *entity){
 }
 
 bool ResetEntity(struct entity *entity, struct player jogador){
-    for(int i = 0; i < enemyQnt; i++){
-        int rndSpecie = rand()%30;
-        do{
-            rndSpecie = rand()%30;
-        }while(allSpecies[rndSpecie].indentifier.symbol == '\0');
-        entity->specie = allSpecies[rndSpecie];
-        for(int j = 0; j < 4; j++){
-            int sortedAbility = entity->specie.naturalAbilities[rand()%6];
-            entity->abilities[j].damage.value = allAbilities[sortedAbility].damage.value;
-            entity->abilities[j].damage.element = allAbilities[sortedAbility].damage.element;
-            entity->abilities[j].damage.type = allAbilities[sortedAbility].damage.type;
-            entity->abilities[j].accuracy = allAbilities[sortedAbility].accuracy;
-            entity->abilities[j].indentifier.symbol = allAbilities[sortedAbility].indentifier.symbol;
-            strcpy(entity->abilities[j].indentifier.name, allAbilities[sortedAbility].indentifier.name);
-            strcpy(entity->abilities[j].logMessage[0], allAbilities[sortedAbility].logMessage[0]);
-            strcpy(entity->abilities[j].logMessage[1], allAbilities[sortedAbility].logMessage[1]);
-        }
-        entity->isShiny = !(rand()%15);
-        entity->indentifier.symbol = entity->specie.indentifier.symbol;
-        strcpy(entity->indentifier.name, entity->specie.indentifier.name);
-        entity->pos.x = (rand()%(MAX_COLUNA-1))+1;
-        entity->pos.y = (rand()%(MAX_LINHA-1))+1;
-        entity->velo = 1;
-        entity->level = max(1,(rand()%3)-1+jogador.level);
-        UpdateEntity(entity);
+    int rndSpecie = rand()%30;
+    do{
+        rndSpecie = rand()%30;
+    }while(allSpecies[rndSpecie].indentifier.symbol == '\0');
+    entity->specie = allSpecies[rndSpecie];
+    
+    for(int j = 0; j < 4; j++){
+        int sortedAbility = entity->specie.naturalAbilities[rand()%6];
+        entity->abilities[j].damage.value = allAbilities[sortedAbility].damage.value;
+        entity->abilities[j].damage.element = allAbilities[sortedAbility].damage.element;
+        entity->abilities[j].damage.type = allAbilities[sortedAbility].damage.type;
+        entity->abilities[j].accuracy = allAbilities[sortedAbility].accuracy;
+        entity->abilities[j].indentifier.symbol = allAbilities[sortedAbility].indentifier.symbol;
+        strcpy(entity->abilities[j].indentifier.name, allAbilities[sortedAbility].indentifier.name);
+        strcpy(entity->abilities[j].logMessage[0], allAbilities[sortedAbility].logMessage[0]);
+        strcpy(entity->abilities[j].logMessage[1], allAbilities[sortedAbility].logMessage[1]);
     }
+    
+    entity->isShiny = !(rand()%15);
+    entity->indentifier.symbol = entity->specie.indentifier.symbol;
+    strcpy(entity->indentifier.name, entity->specie.indentifier.name);
+    entity->pos.x = (rand()%(MAX_COLUNA-1))+1;
+    entity->pos.y = (rand()%(MAX_LINHA-1))+1;
+    entity->velo = 1;
+    entity->level = max(1,(rand()%3)-1+jogador.level);
+    
+    UpdateEntity(entity);
     return TRUE;
 }
 
 void ResetEnemies(struct entity enemies[], struct player jogador){
-    for(int i = 0; i < MAXENEMIES; i++){
+    for(int i = 0; i < enemyQnt; i++){
         ResetEntity(&enemies[i], jogador);
+    }
+}
+
+void PlayerWorldLogic(struct player *jogador){
+    input = toupper(getch());
+
+    switch(input){
+        case 'W':
+            jogador->pos.y -= jogador->velo;
+            walkedDistance++;
+            break;
+        case 'S':
+            jogador->pos.y += jogador->velo;
+            walkedDistance++;
+            break;
+        case 'A':
+            jogador->pos.x -= jogador->velo;
+            walkedDistance++;
+            break;
+        case 'D':
+            jogador->pos.x += jogador->velo;
+            walkedDistance++;
+            break;
+    }
+
+    switch(input){
+        case 'O':
+            invencivel = !invencivel;
+            break;
+        case 'P':
+            debugMode = !debugMode;
+            break;
+        case 'R':
+            worldTurn = -1;
+            break;
+        case 'M':
+            scene = MENU;
+    }
+
+    if(jogador->pos.x <= 0){
+        jogador->pos.x = 0;
+    }
+    else if(jogador->pos.x >= MAX_COLUNA){
+        jogador->pos.x = MAX_COLUNA;
+    }
+    
+    if(jogador->pos.y <= 0){
+        jogador->pos.y = 0;
+    }
+    else if(jogador->pos.y >= MAX_LINHA-5){
+        jogador->pos.y = MAX_LINHA-5;
+    }
+}
+
+void EnemyWorldLogic(struct entity *enemy, struct player jogador, int i){
+    int xDist = jogador.pos.x - enemy->pos.x;
+    int yDist = jogador.pos.y - enemy->pos.y;
+    int dist = sqrt(xDist*xDist + yDist*yDist); /// Distancia entre o jogador e o inimigo
+
+    if(dist > aggro_Enemy){             /// Fora da range
+        enemy->pos.x += (rand() % 3 - 1) * enemy->velo;
+        enemy->pos.y += (rand() % 3 - 1) * enemy->velo;
+        enemy->currentColor = enemy->specie.color[enemy->isShiny].idle;
+    }
+    else if(dist > enemy->velo){         /// Dentro da range
+        if(xDist != 0){
+            enemy->pos.x += (xDist / abs(xDist)) * enemy->velo;
+        }
+        if(yDist != 0){
+            enemy->pos.y += (yDist / abs(yDist)) * enemy->velo;
+        }
+        enemy->currentColor = enemy->specie.color[enemy->isShiny].pursuit;
+    }
+    else if(!invencivel){              /// Encostou no jogador
+        enemyIndex = i;
+        scene = BATTLE;
+        Sleep(200);
+    }
+    if(enemy->pos.x <= 0){
+        enemy->pos.x = 0;
+    }
+    else if(enemy->pos.x >= MAX_COLUNA){
+        enemy->pos.x = MAX_COLUNA;
+    }
+
+    if(enemy->pos.y <= 0){
+        enemy->pos.y = 0;
+    }
+    else if(enemy->pos.y >= MAX_LINHA-5){
+        enemy->pos.y = MAX_LINHA-5;
+    }
+}
+
+void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt[2], char logs[2][60], bool *win){
+    if(forceSwitch){
+        input = '2';
+        battleTurn--;
+    }
+    else{
+        do{
+            input = getch();
+        }while(!isCharInsideArray(input, "1234"));
+    }
+
+    switch(input){
+        case '1':
+            ActionBox(60,20,'+','|','=');
+            WriteBox(jogador->bag[jogador->currentEntity].abilities[0].indentifier.name, jogador->bag[jogador->currentEntity].abilities[1].indentifier.name, jogador->bag[jogador->currentEntity].abilities[2].indentifier.name, jogador->bag[jogador->currentEntity].abilities[3].indentifier.name);
+            ClearLog(0); ClearLog(1);
+            
+            bool haveAbilityOpen = FALSE;
+            for(int i = 0; i < 4; i++){
+                if(jogador->bag[jogador->currentEntity].abilities[i].indentifier.symbol != '\0'){
+                    haveAbilityOpen = TRUE;
+                    break;
+                }
+            }
+            if(!haveAbilityOpen){
+                strcpy(logs[0], "Nao possui ataques disponiveis");
+                break;
+            }
+            
+            do{
+                input = getch();
+            }while(
+                !isCharInsideArray(input, "1234") || 
+                jogador->bag[jogador->currentEntity].abilities[(int)input - '1'].indentifier.symbol == '\0'
+            );
+            
+            attempt[0] = doAttempt(
+                enemy, 
+                jogador->bag[jogador->currentEntity].abilities[(int)input - '1'], 
+                jogador->bag[jogador->currentEntity].atributes, logs[0]
+            );
+            
+            break;
+
+        case '2':
+            ActionBox(60,20,'+','|','=');
+            ClearLog(0); ClearLog(1);
+            
+            gotoxy(4,MAX_LINHA-3); printf("Selecione qual sera substituido");
+            WriteBox(jogador->bag[0].indentifier.name, jogador->bag[1].indentifier.name, jogador->bag[2].indentifier.name, jogador->bag[3].indentifier.name);
+            
+            do{
+                input = getch();
+            }while(
+                !isCharInsideArray(input, "1234") || 
+                jogador->bag[(int)input - '1'].indentifier.symbol == '\0' || 
+                jogador->bag[(int)input - '1'].health.current <= 0
+            );
+            
+            jogador->currentEntity = (int)input - '1';
+            forceSwitch = FALSE;
+            
+            break;
+        
+        case '3':
+            ActionBox(60,20,'+','|','=');
+            ClearLog(0); ClearLog(1);
+            
+            gotoxy(4,MAX_LINHA-3); printf("Selecione qual sera substituido");
+            WriteBox(jogador->bag[0].indentifier.name, jogador->bag[1].indentifier.name, jogador->bag[2].indentifier.name, jogador->bag[3].indentifier.name);
+            
+            do{
+                input = getch();
+            }while(!isCharInsideArray(input, "1234"));
+            
+            if(CatchEntity(jogador, *enemy, heartsCounter[1],(int)input - '1', dificuldade, cheatMode)){
+                enemy->inactive = TRUE;
+                *win = TRUE;
+            }
+            else{
+                strcpy(logs[0], "Nao foi capturado.");
+            }
+            
+            break;
+        
+        case '4':
+            if(!(rand()%4)){
+                scene = WORLD_MAP; 
+                strcpy(logs[0], "O jogador fugiu da batalha"); 
+                battleTurn = 0;
+            }
+            else{
+                strcpy(logs[0], "O jogador tentou fugir da batalha mas nao conseguiu");
+            } 
+            
+            break;
+    } 
+}
+
+void EnemyBattleLogic(struct entity *enemy, struct player *jogador, int attempt[2], char logs[2][60]){
+    float behaviour = min((jogador->bag[jogador->currentEntity].level-enemy->level) * 3 + (16.0f/heartsCounter[0]) * 2, 9);
+
+    if(enemy->health.current <= 0 || enemy->inactive || forceSwitch){}
+    else{
+        if(rand()%11 >= behaviour){
+            int randomEnemyAbility = rand()%4;
+            bool haveAbilityOpen = FALSE;
+            for(int i = 0; i < 4; i++){
+                if(&enemy->abilities[randomEnemyAbility].indentifier.symbol != '\0'){
+                    haveAbilityOpen = TRUE;
+                    break;
+                }
+                randomEnemyAbility++;
+                randomEnemyAbility = randomEnemyAbility%4;
+            }
+
+            if(!haveAbilityOpen){
+                strcpy(logs[1], "O inimigo nao possui ataques disponiveis");
+            }
+            else{
+                attempt[1] = doAttempt(
+                    &jogador->bag[jogador->currentEntity], 
+                    enemy->abilities[rand()%4], 
+                    enemy->atributes, 
+                    logs[1]
+                );
+            }
+        }
+        else{
+            if(!(rand()%10)){
+                scene = WORLD_MAP;
+                enemy->pos.x = rand()%MAX_COLUNA;
+                enemy->pos.y = rand()%MAX_LINHA;
+                battleTurn = 0;
+                strcpy(logs[1], "O inimigo fugiu da batalha");
+            }
+            else{
+                strcpy(logs[1], "O inimigo tentou fugir da batalha mas nao conseguiu");
+            }
+        }
+    }
+}
+
+void BattleWinLogic(struct entity enemy, struct player *jogador, bool win){
+    if(enemy.health.current <= 0 || win){
+        scene = WORLD_MAP;
+        LevelUpEntity(&jogador->bag[jogador->currentEntity]);
+
+        closestToDeath = min(closestToDeath,heartsCounter[0]);
+        worldTurn = 0; battleTurn = 0;
+        
+        if(enemy.health.current <= 0){
+            enemiesKilled++;
+            gotoxy(4,MAX_LINHA-2); printf("Inimigo perdeu a batalha");
+        }
+        else{
+            gotoxy(4,MAX_LINHA-2); printf("Capturado com sucesso");
+        }
+        getch();
+    }
+    else if(jogador->bag[jogador->currentEntity].health.current <= 0){
+        bool hasEntityLeft = FALSE;
+        
+        for(int i = 0; i < 4; i++){
+            if(jogador->bag[i].health.current > 0){
+                hasEntityLeft = TRUE;
+            }
+        }
+
+        if(hasEntityLeft){
+            forceSwitch = TRUE;
+        }
+        else{
+            scene = GAME_END;
+            gotoxy(4,MAX_LINHA-3); printf("Perdeu");
+            getch();
+        }
     }
 }
 
@@ -463,220 +758,53 @@ void WORLD_SCENE(struct entity enemies[], struct player *jogador){
         CalcPlayerLevel(jogador);
     }
     else{
-        // Logica player
-        input = toupper(getch());
+        PlayerWorldLogic(jogador);
 
-        switch(input){
-            case 'W':
-                jogador->pos.y -= jogador->velo;
-                walkedDistance++;
-                break;
-            case 'S':
-                jogador->pos.y += jogador->velo;
-                walkedDistance++;
-                break;
-            case 'A':
-                jogador->pos.x -= jogador->velo;
-                walkedDistance++;
-                break;
-            case 'D':
-                jogador->pos.x += jogador->velo;
-                walkedDistance++;
-                break;
-        }
-
-        switch(input){
-            case 'O':
-                invencivel = !invencivel;
-                break;
-            case 'P':
-                debugMode = !debugMode;
-                break;
-            case 'R':
-                worldTurn = -1;
-                break;
-            case 'M':
-                scene = MENU;
-        }
-
-        if      (jogador->pos.x <= 0)           {jogador->pos.x = 0;}
-        else if (jogador->pos.x >= MAX_COLUNA)  {jogador->pos.x = MAX_COLUNA;}
-        if      (jogador->pos.y <= 0)           {jogador->pos.y = 0;}
-        else if (jogador->pos.y >= MAX_LINHA-5) {jogador->pos.y = MAX_LINHA-5;}
-
-        // Logica enemy
         for(int i = 0; i < enemyQnt; i++){
-            int xDist = jogador->pos.x - enemies[i].pos.x;
-            int yDist = jogador->pos.y - enemies[i].pos.y;
-            int dist = sqrt(xDist*xDist + yDist*yDist); /// Distancia entre o jogador e o inimigo
-
-            if(dist > aggro_Enemy){             /// Fora da range
-                enemies[i].pos.x += (rand() % 3 - 1) * enemies[i].velo;
-                enemies[i].pos.y += (rand() % 3 - 1) * enemies[i].velo;
-                enemies[i].currentColor = enemies[i].specie.color[enemies[i].isShiny].idle;
-            }
-            else if(dist > enemies[i].velo){         /// Dentro da range
-                if(xDist != 0){
-                    enemies[i].pos.x += (xDist / abs(xDist)) * enemies[i].velo;
-                }
-                if(yDist != 0){
-                    enemies[i].pos.y += (yDist / abs(yDist)) * enemies[i].velo;
-                }
-                enemies[i].currentColor = enemies[i].specie.color[enemies[i].isShiny].pursuit;
-            }
-            else if(!invencivel){              /// Encostou no jogador
-                enemyIndex = i;
-                scene = BATTLE;
-                Sleep(200);
-            }
-            if      (enemies[i].pos.x <= 0)           {enemies[i].pos.x = 0;}
-            else if (enemies[i].pos.x >= MAX_COLUNA)  {enemies[i].pos.x = MAX_COLUNA;}
-            if      (enemies[i].pos.y <= 0)           {enemies[i].pos.y = 0;}
-            else if (enemies[i].pos.y >= MAX_LINHA-5)   {enemies[i].pos.y = MAX_LINHA-5;}
+            EnemyWorldLogic(&enemies[i], *jogador, i);
         }
     }
 
     worldTurn++;
-
     worldTurn = worldTurn%100;
 
     // RENDER
     textcolor(MAGENTA);
     Moldura(TRUE, '+', '|', '=');
+    
     int viewX[2] = {2,30}; int viewY[2] = {22,23};
     EntityView(jogador->bag, viewX, viewY);
+    
     gotoxy(MAX_COLUNA,MAX_LINHA); textcolor(jogador->level+2); printf("%d", jogador->level);
     gotoxy(jogador->pos.x, jogador->pos.y); textcolor(YELLOW); printf("@");
-    for(int i = 0; i < enemyQnt; i++){gotoxy(enemies[i].pos.x, enemies[i].pos.y); textcolor(enemies[i].currentColor); printf("%c", enemies[i].indentifier.symbol);}
+    
+    for(int i = 0; i < enemyQnt; i++){
+        gotoxy(enemies[i].pos.x, enemies[i].pos.y); 
+        textcolor(enemies[i].currentColor); printf("%c", enemies[i].indentifier.symbol);
+    }
+    
     gotoxy(MAX_COLUNA, MAX_LINHA+1);
 }
 
 void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
     int attempt[2] = {0};
     char logs[2][60] = {"",""};
-    float behaviour = 0.0f;
     bool win = FALSE;
-    bool forceSwitch = FALSE;
+    
     // Pre Turn
     if(!battleTurn){
         CaveiraAnim(backgroundType, CYAN);
-        behaviour = (jogador->bag[jogador->currentEntity].level - enemy->level)*4;
         jogador->currentEntity = 0;
         enemy->inactive = FALSE;
         jogador->bag[jogador->currentEntity].inactive = FALSE;
         battleTurn++;
     }
     else{
-        // In Turn
-        if(forceSwitch){
-            input = '2';
-        }
-        else{
-            do{input = getch();}while(!isCharInsideArray(input, "1234"));
-        }
+        PlayerBattleLogic(enemy, jogador, attempt, logs, &win);
+        EnemyBattleLogic(enemy, jogador, attempt, logs);        
 
-        switch(input){
-            case '1':
-                ActionBox(60,20,'+','|','=');
-                WriteBox(jogador->bag[jogador->currentEntity].abilities[0].indentifier.name, jogador->bag[jogador->currentEntity].abilities[1].indentifier.name, jogador->bag[jogador->currentEntity].abilities[2].indentifier.name, jogador->bag[jogador->currentEntity].abilities[3].indentifier.name);
-                //ClearLog(0); ClearLog(1);
-                bool haveAbilityOpen = FALSE;
-                for(int i = 0; i < 4; i++){
-                    if(jogador->bag[jogador->currentEntity].abilities[i].indentifier.symbol != '\0'){
-                        haveAbilityOpen = TRUE;
-                        break;
-                    }
-                }
-                if(!haveAbilityOpen){strcpy(logs[0], "Nao possui ataques disponiveis"); break;}
-                do{input = getch();}while(!isCharInsideArray(input, "1234") || jogador->bag[jogador->currentEntity].abilities[(int)input - '1'].indentifier.symbol == '\0');
-                attempt[0] = doAttempt(enemy, jogador->bag[jogador->currentEntity].abilities[(int)input - '1'], jogador->bag[jogador->currentEntity].atributes, logs[0]);
-                break;
-            case '2':
-                ActionBox(60,20,'+','|','=');
-                ClearLog(0); ClearLog(1);
-                gotoxy(4,MAX_LINHA-3); printf("Selecione qual sera substituido");
-                WriteBox(jogador->bag[0].indentifier.name, jogador->bag[1].indentifier.name, jogador->bag[2].indentifier.name, jogador->bag[3].indentifier.name);
-                do{input = getch();}while(!isCharInsideArray(input, "1234") || jogador->bag[(int)input - '1'].indentifier.symbol == '\0' || jogador->bag[(int)input - '1'].health.current <= 0);
-                jogador->currentEntity = (int)input - '1';
-                forceSwitch = FALSE;
-                break;
-            case '3':
-                ActionBox(60,20,'+','|','=');
-                ClearLog(0); ClearLog(1);
-                gotoxy(4,MAX_LINHA-3); printf("Selecione qual sera substituido");
-                WriteBox(jogador->bag[0].indentifier.name, jogador->bag[1].indentifier.name, jogador->bag[2].indentifier.name, jogador->bag[3].indentifier.name);
-                do{input = getch();}while(!isCharInsideArray(input, "1234"));
-                if(CatchEntity(jogador, *enemy, heartsCounter[1],(int)input - '1', dificuldade, cheatMode)){
-                    strcpy(logs[0], "Capturado com sucesso");
-                    enemy->inactive = TRUE;
-                    win = TRUE;
-                }
-                else{strcpy(logs[0], "Nao foi capturado.");}
-                break;
-            case '4':
-                if(!(rand()%4)){scene = WORLD_MAP; strcpy(logs[0], "O jogador fugiu da batalha"); battleTurn = 0;}
-                else{strcpy(logs[0], "O jogador tentou fugir da batalha mas nao conseguiu");} 
-                break;
-        } 
-
-        
-        behaviour = min((jogador->bag[jogador->currentEntity].level-enemy->level) * 3 + (16.0f/heartsCounter[0]) * 2, 9);
-
-        if(enemy->health.current <= 0 || enemy->inactive){}
-        else{
-            if(rand()%11 >= behaviour){
-                int randomEnemyAbility = rand()%4;
-                bool haveAbilityOpen = FALSE;
-                for(int i = 0; i < 4; i++){
-                    if(&enemy->abilities[randomEnemyAbility].indentifier.symbol != '\0'){
-                        haveAbilityOpen = TRUE;
-                        break;
-                    }
-                    randomEnemyAbility++;
-                    randomEnemyAbility = randomEnemyAbility%4;
-                }
-                if(!haveAbilityOpen){strcpy(logs[1], "O inimigo nao possui ataques disponiveis");}
-                else{attempt[1] = doAttempt(&jogador->bag[jogador->currentEntity], enemy->abilities[rand()%4], enemy->atributes, logs[1]);}
-            }
-            else{
-                if(!(rand()%10)){
-                    scene = WORLD_MAP;
-                    enemy->pos.x = rand()%MAX_COLUNA;
-                    enemy->pos.y = rand()%MAX_LINHA;
-                    battleTurn = 0;
-                    strcpy(logs[1], "O inimigo fugiu da batalha");
-                }
-                else{strcpy(logs[1], "O inimigo tentou fugir da batalha mas nao conseguiu");}
-            }
-        }
-
-        // Post Turn
-        if(enemy->health.current <= 0 || win){
-            scene = WORLD_MAP;
-            // jogador->level++;
-            LevelUpEntity(&jogador->bag[jogador->currentEntity]);
-            enemiesKilled += enemy->health.current <= 0;
-            closestToDeath = min(closestToDeath,heartsCounter[0]);
-            worldTurn = 0; battleTurn = 0;
-        }
-        else if(jogador->bag[jogador->currentEntity].health.current <= 0){
-            bool hasEntityLeft = FALSE;
-            for(int i = 0; i < 4; i++){
-                if(jogador->bag[i].health.current > 0){
-                    hasEntityLeft = TRUE;
-                }
-            }
-            if(hasEntityLeft){
-                forceSwitch = TRUE;
-            }
-            else{
-                scene = GAME_END;
-            }
-        }
-        
         heartsCounter[1] = (enemy->health.current*1.0f/enemy->health.max)*16;
         heartsCounter[0] = (jogador->bag[jogador->currentEntity].health.current*1.0f/jogador->bag[jogador->currentEntity].health.max)*16;
-
     }
 
     // RENDER
@@ -690,12 +818,19 @@ void BATTLE_SCENE(struct entity *enemy, struct player *jogador){
     PrintPortrait(4,14,jogador->bag[jogador->currentEntity].specie.portrait,heartsCounter[0]);
     PrintHearts(heartsCounter[0], 4, 11);
 
-    gotoxy(4,MAX_LINHA-3); printf(logs[0], attempt[0]);
-    gotoxy(4,MAX_LINHA-2); printf(logs[1], attempt[1]);
+    for(int i = 0; i < 2; i++){
+        snprintf(logs[i], 60, "%s (%d)", logs[i], attempt[i]);
+    }
+
+    gotoxy(4,MAX_LINHA-3); printf(logs[0]);
+    gotoxy(4,MAX_LINHA-2); printf(logs[1]);
 
     WriteBox("ATTACK", "SWITCH", "CATCH", "FLEE");
 
     gotoxy(2,2); printf("Turno %d", battleTurn);
+
+    BattleWinLogic(*enemy, jogador, win);
+
     battleTurn++;
 }
 
