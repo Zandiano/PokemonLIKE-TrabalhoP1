@@ -14,8 +14,6 @@ math.h
 
 time.h 
 
-stdbool.h
-
 ## Autores-
 Felipe Ganem Rocha - felipeganem1@gmail.com 
 
