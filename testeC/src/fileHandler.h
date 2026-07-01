@@ -4,10 +4,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "specie.h"
+#include "variables.h"
 #include "objects.h"
 
-#define MAXFILES 30
 
 void CopyString(FILE *filepointer, char dest[]){
     char buffer[64] = {0}, trash = ' ';  

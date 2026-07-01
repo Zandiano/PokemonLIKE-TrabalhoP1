@@ -1,11 +1,46 @@
 #ifndef __BATTLE_H
 #define __BATTLE_H
 
+#include <math.h>
 #include "objects.h"
-#include "specie.h"
-#include "enums.h"
-#include "player.h"
+#include "render.h"
+#include "variables.h"
 #include "entity.h"
+#include "player.h"
+#include "elements.h"
+
+#define min(a, b) (((a) < (b)) ? (a) : (b))
+
+bool isCharInsideArray(char x, char array[]){
+    int len = strlen(array);
+    for(int i = 0; i < len; i++){
+        if(array[i] == x){return TRUE;}
+    }
+    return FALSE;
+}
+
+int doAttempt(struct entity *target, struct ability ability, int atributes[6], char log[]){
+    int prob = rand()%100+1;
+    int danoBase = ability.damage.value;
+    int ataque = atributes[atk+ability.damage.type];
+    int defesa = target->atributes[def+ability.damage.type];
+    
+    float dmg = danoBase * fmax(ataque/100,1) / fmax(defesa/100,1) * ElementEffectiviness(ability.damage.element, target->specie.element[0], target->specie.element[1]);
+
+    if(prob>ability.accuracy || dmg <= 0){
+        if(ability.logMessage[1][0] != '\0'){
+            strcpy(log, ability.logMessage[1]);
+        }
+        return 0;
+    }
+
+    if(ability.logMessage[0][0] != '\0'){
+        strcpy(log, ability.logMessage[0]);
+    }
+    
+    target->health.current -= dmg;
+    return (int)dmg;
+}
 
 void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt[2], char logs[2][60], bool *win){
     if(forceSwitch){
@@ -82,7 +117,7 @@ void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt
                 input = getch();
             }while(!isCharInsideArray(input, "1234"));
             
-            if(CatchEntity(jogador, *enemy, heartsCounter[1],(int)input - '1', dificuldade, cheatMode)){
+            if(CatchEntity(jogador, *enemy, heartsCounter[1], (int)input - '1')){
                 enemy->inactive = TRUE;
                 *win = TRUE;
             }
@@ -107,7 +142,7 @@ void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt
 }
 
 void EnemyBattleLogic(struct entity *enemy, struct player *jogador, int attempt[2], char logs[2][60]){
-    float behaviour = min((jogador->bag[jogador->currentEntity].level-enemy->level) * 3 + (16.0f/heartsCounter[0]) * 2, 9);
+    float behaviour = fmin((jogador->bag[jogador->currentEntity].level-enemy->level) * 3 + (16.0f/heartsCounter[0]) * 2, 9);
 
     if(enemy->health.current <= 0 || enemy->inactive || forceSwitch){}
     else{

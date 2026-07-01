@@ -37,4 +37,8 @@ const float elementMatrix[19][19] = {
 
 // 0-PHY 1-SPE
 
+float ElementEffectiviness(enum element attacker, enum element targetFirst, enum element targetSecond){
+    return elementMatrix[attacker][targetFirst] * elementMatrix[attacker][targetSecond];
+}
+
 #endif
