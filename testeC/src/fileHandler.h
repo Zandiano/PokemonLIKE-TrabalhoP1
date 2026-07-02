@@ -6,10 +6,14 @@
 
 #include "variables.h"
 #include "objects.h"
+#include "bool.h"
 
+char absolutePath[128] = "";
+char relativePath[64] = "..pokes";
+bool needAbsolute = FALSE;
 
 void CopyString(FILE *filepointer, char dest[]){
-    char buffer[64] = {0}, trash = ' ';  
+    char buffer[64] = {0}, trash = ' ';
     trash = fgetc(filepointer);
     if(trash != '\n'){ungetc(trash, filepointer);}
     fgets(buffer, 64, filepointer);
@@ -18,8 +22,20 @@ void CopyString(FILE *filepointer, char dest[]){
 }
 
 void OpenConfig(char filesName[MAXFILES][64]){
-    FILE *configPtr = fopen("../pokes/config.txt", "r");
-    if(!configPtr){printf("Config nao encontrada"); exit(1);}
+    char pathConfig = "";
+
+    snprintf(pathConfig, 64, "%s/config.txt", relativePath);
+    FILE *configPtr = fopen(pathConfig, "r");
+
+    if(!configPtr){
+        printf("Config nao encontrada\n");
+        printf("Escreva o caminho absoluto para a pasta: ");
+        scanf("%s", &absolutePath);
+        snprintf(pathConfig, 128, "%s/config.txt", absolutePath);
+        configPtr = fopen(pathConfig, "r");
+        needAbsolute = TRUE;
+    }
+
     for(int i = 0; i < MAXFILES; i++){
         if(!fscanf(configPtr, "%s", filesName[i])){
             i--;
@@ -34,8 +50,12 @@ void OpenConfig(char filesName[MAXFILES][64]){
 void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]){
     for(int i = 0; i < MAXFILES; i++){filesPtrs[0][i] = NULL; filesPtrs[1][i] = NULL;}
     for(int i = 0, relativo[2] = {0}; i < MAXFILES && filesName[i][0] != '\0'; i++){
-        char fileName[64];
-        snprintf(fileName, 64, "../pokes/%s", filesName[i]);
+        char fileName[128];
+
+        if(!needAbsolute)
+            snprintf(fileName, 128, "%s/%s", relativePath, filesName[i]);
+        else
+            snprintf(fileName, 128, "%s/%s", absolutePath, filesName[i]);
 
         int divisor = 0;
         for(int j = 0; filesName[i][j] != '\0'; j++){
