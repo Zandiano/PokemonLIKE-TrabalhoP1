@@ -9,7 +9,7 @@
 #include "bool.h"
 
 char absolutePath[128] = "";
-char relativePath[64] = "..pokes";
+char relativePath[64] = "../pokes";
 bool needAbsolute = FALSE;
 
 void CopyString(FILE *filepointer, char dest[]){
@@ -22,7 +22,7 @@ void CopyString(FILE *filepointer, char dest[]){
 }
 
 void OpenConfig(char filesName[MAXFILES][64]){
-    char pathConfig = "";
+    char pathConfig[128] = "";
 
     snprintf(pathConfig, 64, "%s/config.txt", relativePath);
     FILE *configPtr = fopen(pathConfig, "r");
