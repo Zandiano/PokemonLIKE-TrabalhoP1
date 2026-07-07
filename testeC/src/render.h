@@ -29,12 +29,14 @@ void PrintHearts(int hearts, int x, int y){
     }
 }
 
-void PrintPortrait(int x, int y, struct portrait portrait, int currentHeart){
+void PrintPortrait(int x, int y, struct portrait portrait, int currentHeart, int){
     for(int i = 0; i < 5; i++){
-        gotoxy(x,y+i); 
+        gotoxy(x,y+i);
         printf("%s", portrait.battle[(int)(currentHeart/4)][i]);
     }
 }
+
+void PrintName(char name);
 
 void ActionBox(int middle, int height, char corner, char vertical, char horizontal){
     gotoxy(0,0);
@@ -164,7 +166,7 @@ void Debug(struct player jogador){
         printf("IV { HP: %d ; ATK: %d ; SPATK: %d ; DEF: %d ; SPDEF: %d ; SPD: %d } ;", jogador.bag[jogador.currentEntity].IV[hp], jogador.bag[jogador.currentEntity].IV[atk], jogador.bag[jogador.currentEntity].IV[spatk], jogador.bag[jogador.currentEntity].IV[def], jogador.bag[jogador.currentEntity].IV[spdef], jogador.bag[jogador.currentEntity].IV[spd]);
         gotoxy(2, MAX_LINHA+6);
         printf("ATR{ HP: %d ; ATK: %d ; SPATK: %d ; DEF: %d ; SPDEF: %d ; SPD: %d } }", jogador.bag[jogador.currentEntity].atributes[hp], jogador.bag[jogador.currentEntity].atributes[atk], jogador.bag[jogador.currentEntity].atributes[spatk], jogador.bag[jogador.currentEntity].atributes[def], jogador.bag[jogador.currentEntity].atributes[spdef], jogador.bag[jogador.currentEntity].atributes[spd]);
-        
+
         textbackground(backgroundType);
     }
     else{
