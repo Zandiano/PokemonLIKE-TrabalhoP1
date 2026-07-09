@@ -8,7 +8,7 @@
 #define NOTEFFE 0.5f
 #define IMUNITY 0.0f
 
-const float elementMatrix[19][19] = {
+const float elementMatrix[18][18] = {
 //            NUL      NOR      FIR      WAT      ELE      GRA      ICE      FIG      POI      GRD      FLY      PSY      BUG      ROC      GHO      DRA      DAR      STE      FAI
 /* NUL */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI },
 /* NOR */ { EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, EFFECTI, NOTEFFE, IMUNITY, EFFECTI, EFFECTI, NOTEFFE, EFFECTI },
@@ -36,25 +36,25 @@ const float elementMatrix[19][19] = {
 9-FLYING   10-PSYCHIC  11-BUG      12-ROCK     13-GHOST    14-DRAGON   15-DARK         16-STEEL    17-FAIRY
 */
 
-enum elementColor{
-    nullElement = 0;
-    normal = WHITE,
-    fire = RED,
-    water = BLUE,
-    eletric = YELLOW,
-    grass = GREEN,
-    ice = CYAN,
-    fightining = BLACK,
-    ground = BROWN,
-    flying = LIGHTGRAY,
-    psychic = MAGENTA,
-    bug = LIGHTGREEN,
-    rock = DARKGRAY,
-    ghost = LIGHTRED,
-    dragon = LIGHTBLUE,
-    dark = DARKGRAY,
-    steel = LIGHTCYAN,
-    fairy = LIGHTMAGENTA,
+enum COLORS elementColor[] = {
+    0,
+    WHITE,
+    RED,
+    BLUE,
+    YELLOW,
+    GREEN,
+    CYAN,
+    RED,
+    BROWN,
+    LIGHTGRAY,
+    MAGENTA,
+    LIGHTGREEN,
+    DARKGRAY,
+    LIGHTRED,
+    LIGHTBLUE,
+    DARKGRAY,
+    LIGHTCYAN,
+    LIGHTMAGENTA,
 };
 
 // 0-PHY 1-SPE

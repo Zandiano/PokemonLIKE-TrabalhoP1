@@ -42,51 +42,64 @@ int doAttempt(struct entity *target, struct ability ability, int atributes[6], c
     return (int)dmg;
 }
 
-void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt[2], char logs[2][60], bool *win){
-    if(forceSwitch){
-        input = '2';
-        battleTurn--;
-    }
-    else{
-        do{
-            input = getch();
-        }while(!isCharInsideArray(input, "1234"));
-    }
-
-    switch(input){
-        case '1':
-            ActionBox(60,20,'+','|','=');
-            WriteBox(jogador->bag[jogador->currentEntity].abilities[0].indentifier.name, jogador->bag[jogador->currentEntity].abilities[1].indentifier.name, jogador->bag[jogador->currentEntity].abilities[2].indentifier.name, jogador->bag[jogador->currentEntity].abilities[3].indentifier.name);
-            ClearLog(0); ClearLog(1);
-            
-            bool haveAbilityOpen = FALSE;
-            for(int i = 0; i < 4; i++){
-                if(jogador->bag[jogador->currentEntity].abilities[i].indentifier.symbol != '\0'){
-                    haveAbilityOpen = TRUE;
-                    break;
-                }
-            }
-            if(!haveAbilityOpen){
-                strcpy(logs[0], "Nao possui ataques disponiveis");
+void Attack(struct player *jogador, struct entity *enemy, int attempt[2], char logs[2][60], bool type){
+    if(type){
+        ActionBox(60,20,'+','|','=');
+        WriteBox(jogador->bag[jogador->currentEntity].abilities[0].indentifier.name, jogador->bag[jogador->currentEntity].abilities[1].indentifier.name, jogador->bag[jogador->currentEntity].abilities[2].indentifier.name, jogador->bag[jogador->currentEntity].abilities[3].indentifier.name);
+        ClearLog(0); ClearLog(1);
+        
+        bool haveAbilityOpen = FALSE;
+        for(int i = 0; i < 4; i++){
+            if(jogador->bag[jogador->currentEntity].abilities[i].indentifier.symbol){
+                haveAbilityOpen = TRUE;
                 break;
             }
-            
-            do{
-                input = getch();
-            }while(
-                !isCharInsideArray(input, "1234") || 
-                jogador->bag[jogador->currentEntity].abilities[(int)input - '1'].indentifier.symbol == '\0'
-            );
-            
-            attempt[0] = doAttempt(
-                enemy, 
-                jogador->bag[jogador->currentEntity].abilities[(int)input - '1'], 
-                jogador->bag[jogador->currentEntity].atributes, logs[0]
-            );
-            
-            break;
+        }
+        if(!haveAbilityOpen){
+            strcpy(logs[0], "Nao possui ataques disponiveis");
+            return;
+        }
+        
+        do{
+            input = getch();
+        }while(
+            !isCharInsideArray(input, "1234") || 
+            !jogador->bag[jogador->currentEntity].abilities[(int)input - '1'].indentifier.symbol
+        );
+        
+        attempt[0] = doAttempt(
+            enemy, 
+            jogador->bag[jogador->currentEntity].abilities[(int)input - '1'], 
+            jogador->bag[jogador->currentEntity].atributes, logs[0]
+        );
+    }
+    else{
+        int randomEnemyAbility = rand()%4;
+        bool haveAbilityOpen = FALSE;
+        for(int i = 0; i < 4; i++){
+            if(&enemy->abilities[randomEnemyAbility].indentifier.symbol){
+                haveAbilityOpen = TRUE;
+                break;
+            }
+            randomEnemyAbility = randomEnemyAbility + 1 % 4;
+        }
 
-        case '2':
+        if(!haveAbilityOpen){
+            strcpy(logs[1], "O inimigo nao possui ataques disponiveis");
+        }
+        else{
+            attempt[1] = doAttempt(
+                &jogador->bag[jogador->currentEntity], 
+                enemy->abilities[rand()%4], 
+                enemy->atributes, 
+                logs[1]
+            );
+        }
+    }
+
+}
+
+void Switch(struct player *jogador){
             ActionBox(60,20,'+','|','=');
             ClearLog(0); ClearLog(1);
             
@@ -103,40 +116,78 @@ void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt
             
             jogador->currentEntity = (int)input - '1';
             forceSwitch = FALSE;
-            
+}
+
+void TryCatch(struct player *jogador, struct entity *enemy, bool *win, char log[60]){
+    ActionBox(60,20,'+','|','=');
+    ClearLog(0); ClearLog(1);
+    
+    gotoxy(4,MAX_LINHA-3); printf("Selecione qual sera substituido");
+    WriteBox(jogador->bag[0].indentifier.name, jogador->bag[1].indentifier.name, jogador->bag[2].indentifier.name, jogador->bag[3].indentifier.name);
+    
+    do{
+        input = getch();
+    }while(!isCharInsideArray(input, "1234"));
+    
+    if(CatchEntity(jogador, *enemy, heartsCounter[1], (int)input - '1')){
+        enemy->inactive = TRUE;
+        *win = TRUE;
+    }
+    else{
+        strcpy(log, "Nao foi capturado.");
+    }
+}
+
+void TryFlee(struct entity *enemy, char logs[2][60], bool type){
+    if(type){
+        if(!(rand()%4)){
+            scene = WORLD_MAP; 
+            strcpy(logs[0], "O jogador fugiu da batalha"); 
+            battleTurn = 0;
+        }
+        else{
+            strcpy(logs[0], "O jogador tentou fugir da batalha mas nao conseguiu");
+        } 
+    }
+    else{
+        if(!(rand()%10)){
+            scene = WORLD_MAP;
+            enemy->pos.x = rand()%MAX_COLUNA;
+            enemy->pos.y = rand()%MAX_LINHA;
+            battleTurn = 0;
+            strcpy(logs[1], "O inimigo fugiu da batalha");
+        }
+        else{
+            strcpy(logs[1], "O inimigo tentou fugir da batalha mas nao conseguiu");
+        }
+    }
+}
+
+void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt[2], char logs[2][60], bool *win){
+    if(forceSwitch){
+        Switch(jogador);
+        return;
+    }
+
+    do{
+        input = getch();
+    }while(!isCharInsideArray(input, "1234"));
+
+    switch(input){
+        case '1':
+            Attack(jogador, enemy, attempt, logs, TRUE);
+            break;
+
+        case '2':
+            Switch(jogador);
             break;
         
         case '3':
-            ActionBox(60,20,'+','|','=');
-            ClearLog(0); ClearLog(1);
-            
-            gotoxy(4,MAX_LINHA-3); printf("Selecione qual sera substituido");
-            WriteBox(jogador->bag[0].indentifier.name, jogador->bag[1].indentifier.name, jogador->bag[2].indentifier.name, jogador->bag[3].indentifier.name);
-            
-            do{
-                input = getch();
-            }while(!isCharInsideArray(input, "1234"));
-            
-            if(CatchEntity(jogador, *enemy, heartsCounter[1], (int)input - '1')){
-                enemy->inactive = TRUE;
-                *win = TRUE;
-            }
-            else{
-                strcpy(logs[0], "Nao foi capturado.");
-            }
-            
+            TryCatch(jogador, enemy, win, logs[0]);
             break;
         
         case '4':
-            if(!(rand()%4)){
-                scene = WORLD_MAP; 
-                strcpy(logs[0], "O jogador fugiu da batalha"); 
-                battleTurn = 0;
-            }
-            else{
-                strcpy(logs[0], "O jogador tentou fugir da batalha mas nao conseguiu");
-            } 
-            
+            TryFlee(enemy, logs, TRUE);
             break;
     } 
 }
@@ -147,40 +198,10 @@ void EnemyBattleLogic(struct entity *enemy, struct player *jogador, int attempt[
     if(enemy->health.current <= 0 || enemy->inactive || forceSwitch){}
     else{
         if(rand()%11 >= behaviour){
-            int randomEnemyAbility = rand()%4;
-            bool haveAbilityOpen = FALSE;
-            for(int i = 0; i < 4; i++){
-                if(&enemy->abilities[randomEnemyAbility].indentifier.symbol != '\0'){
-                    haveAbilityOpen = TRUE;
-                    break;
-                }
-                randomEnemyAbility++;
-                randomEnemyAbility = randomEnemyAbility%4;
-            }
-
-            if(!haveAbilityOpen){
-                strcpy(logs[1], "O inimigo nao possui ataques disponiveis");
-            }
-            else{
-                attempt[1] = doAttempt(
-                    &jogador->bag[jogador->currentEntity], 
-                    enemy->abilities[rand()%4], 
-                    enemy->atributes, 
-                    logs[1]
-                );
-            }
+            Attack(jogador, enemy, attempt, logs, FALSE);
         }
         else{
-            if(!(rand()%10)){
-                scene = WORLD_MAP;
-                enemy->pos.x = rand()%MAX_COLUNA;
-                enemy->pos.y = rand()%MAX_LINHA;
-                battleTurn = 0;
-                strcpy(logs[1], "O inimigo fugiu da batalha");
-            }
-            else{
-                strcpy(logs[1], "O inimigo tentou fugir da batalha mas nao conseguiu");
-            }
+            TryFlee(enemy, logs, FALSE);
         }
     }
 }
@@ -221,6 +242,5 @@ void BattleWinLogic(struct entity enemy, struct player *jogador, bool win){
         }
     }
 }
-
 
 #endif

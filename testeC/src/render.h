@@ -29,14 +29,24 @@ void PrintHearts(int hearts, int x, int y){
     }
 }
 
-void PrintPortrait(int x, int y, struct portrait portrait, int currentHeart, int){
+void PrintPortrait(int x, int y, struct portrait portrait, int currentHeart, enum COLORS primary, enum COLORS secondary){
     for(int i = 0; i < 5; i++){
         gotoxy(x,y+i);
+        textcolor(primary);
+        if(i > 2 && secondary)
+            textcolor(secondary);
         printf("%s", portrait.battle[(int)(currentHeart/4)][i]);
     }
+    textcolor(MAGENTA);
 }
 
-void PrintName(char name);
+void PrintName(int x, int y, char name[], int level){
+    gotoxy(x,y);
+    for(int i = 0; name[i]; i++){
+        name[i] = toupper(name[i]);
+    }
+    printf("%s (%d)", name, level);
+}
 
 void ActionBox(int middle, int height, char corner, char vertical, char horizontal){
     gotoxy(0,0);

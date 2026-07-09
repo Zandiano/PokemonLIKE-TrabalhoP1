@@ -14,10 +14,15 @@ bool needAbsolute = FALSE;
 
 void CopyString(FILE *filepointer, char dest[]){
     char buffer[64] = {0}, trash = ' ';
+    
     trash = fgetc(filepointer);
-    if(trash != '\n'){ungetc(trash, filepointer);}
+    if(trash != '\n'){
+        ungetc(trash, filepointer);
+    }
+    
     fgets(buffer, 64, filepointer);
     buffer[strlen(buffer)-1] = '\0';
+    
     strcpy(dest, buffer);
 }
 
@@ -58,7 +63,7 @@ void LoadPointers(FILE *filesPtrs[2][MAXFILES], char filesName[MAXFILES][64]){
             snprintf(fileName, 128, "%s/%s", absolutePath, filesName[i]);
 
         int divisor = 0;
-        for(int j = 0; filesName[i][j] != '\0'; j++){
+        for(int j = 0; filesName[i][j]; j++){
             if(filesName[i][j] == '.'){
                 divisor = filesName[i][j+1] == 'a' && filesName[i][j+2] == 'b' && filesName[i][j+3] == 'i';
             }
