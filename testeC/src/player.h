@@ -5,8 +5,7 @@
 #include "entity.h"
 #include "variables.h"
 
-#define euler 2.8f
-#define catchEq(hearts, levelDiff, rarity, Difficulty) (24 - hearts) * pow(euler, levelDiff/3) * 125 / Difficulty * rarity * 6
+#define catchEq(hearts, levelDiff, rarity, Difficulty) 100 * ((hearts * pow(2,levelDiff/5.0f) * rarity * Difficulty / 30.0f) - 16) / -16.0f
 
 void Init(struct player *jogador){
     // Scores
@@ -34,11 +33,19 @@ void CalcPlayerLevel(struct player *jogador){
     jogador->level = media/(i+1)+1;
 }
 
-bool CatchEntity(struct player *catcher, struct entity catch, int currentHeart, int slot){
-    if(rand()%100 > catchEq(currentHeart, catch.level-catcher->level, catch.specie.rarity, dificuldade) && !cheatMode)
+bool CatchEntity(struct player *catcher, struct entity catch, int currentHeart, int slot, int *attempt){
+    int prob = catchEq(currentHeart, catch.level-catcher->level, catch.specie.rarity, dificuldade);
+    *attempt = max(prob,0);
+    if(rand()%100 > prob && !cheatMode)
         return FALSE;
     CopyEntity(&catcher->bag[slot], catch);
     return TRUE;
+}
+
+void HealParty(struct entity bag[]){
+    for(int i = 0; i < sizeof(bag)/sizeof(bag[0]); i++){
+        HealEntity(&bag[i], 1.0f);
+    }
 }
 
 #endif

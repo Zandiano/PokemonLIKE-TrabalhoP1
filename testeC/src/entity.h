@@ -5,6 +5,20 @@
 
 #define atrEq(constant, base, IV, level) constant*base*(IV/100.0f+1)*(level/40.0f+1)
 
+struct entity nullEntity = {0};
+
+int HealEntity(struct entity *entity, float percent){
+    int oldHealth = entity->health.current; 
+    
+    entity->health.current += percent * entity->health.max;
+    
+    if(entity->health.current > entity->health.max){
+        entity->health.current = entity->health.max;
+    }
+
+    return entity->health.current - oldHealth;
+}
+
 void UpdateEntity(struct entity *entity){
     entity->atributes[hp] = (int)atrEq(1.5f, entity->specie.base[hp], entity->IV[hp], entity->level);
     entity->atributes[atk] = (int)atrEq(1, entity->specie.base[atk], entity->IV[atk], entity->level);
@@ -14,7 +28,7 @@ void UpdateEntity(struct entity *entity){
     entity->atributes[spd] = (int)atrEq(0.5f, entity->specie.base[spd], entity->IV[spd], entity->level);
     
     entity->health.max = entity->atributes[hp];
-    entity->health.current = entity->health.max;
+    HealEntity(entity, 1.0f);
 }
 
 bool CopyEntity(struct entity *dest, struct entity from){
@@ -79,5 +93,8 @@ void ResetEnemies(struct entity enemies[], struct player jogador){
     }
 }
 
+void KillEntity(struct entity *entity){
+    CopyEntity(entity, nullEntity);
+}
 
 #endif

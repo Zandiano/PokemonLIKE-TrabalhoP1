@@ -21,7 +21,7 @@ int worldTurn = 0;
 int backgroundType = BLACK;
 int enemyIndex = -1;
 int enemyQnt = 2;
-int dificuldade = 2;
+int dificuldade = 5;
 char input = ' ';
 
 // Battle
@@ -29,6 +29,7 @@ int aggro_Enemy = 12;
 int battleTurn = 0;
 int heartsCounter[2] = {16,16};
 bool forceSwitch = FALSE;
+bool hasEntityLeft = TRUE;
 
 // Scores
 int walkedDistance = 0;

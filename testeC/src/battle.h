@@ -118,7 +118,7 @@ void Switch(struct player *jogador){
             forceSwitch = FALSE;
 }
 
-void TryCatch(struct player *jogador, struct entity *enemy, bool *win, char log[60]){
+void TryCatch(struct player *jogador, struct entity *enemy, bool *win, char log[60], int attempt[2]){
     ActionBox(60,20,'+','|','=');
     ClearLog(0); ClearLog(1);
     
@@ -129,12 +129,13 @@ void TryCatch(struct player *jogador, struct entity *enemy, bool *win, char log[
         input = getch();
     }while(!isCharInsideArray(input, "1234"));
     
-    if(CatchEntity(jogador, *enemy, heartsCounter[1], (int)input - '1')){
+    if(CatchEntity(jogador, *enemy, heartsCounter[1], (int)input - '1', &attempt[0])){
+        strcpy(log, "Capturado com sucesso (%d%%)");
         enemy->inactive = TRUE;
         *win = TRUE;
     }
     else{
-        strcpy(log, "Nao foi capturado.");
+        strcpy(log, "Nao foi capturado (%d%%)");
     }
 }
 
@@ -183,7 +184,7 @@ void PlayerBattleLogic(struct entity *enemy, struct player *jogador, int attempt
             break;
         
         case '3':
-            TryCatch(jogador, enemy, win, logs[0]);
+            TryCatch(jogador, enemy, win, logs[0], attempt);
             break;
         
         case '4':
@@ -206,26 +207,26 @@ void EnemyBattleLogic(struct entity *enemy, struct player *jogador, int attempt[
     }
 }
 
-void BattleWinLogic(struct entity enemy, struct player *jogador, bool win){
-    if(enemy.health.current <= 0 || win){
+void BattleWinLogic(struct entity *enemy, struct player *jogador, bool win, char logs[2][60]){
+    if(enemy->health.current <= 0 || win){
         scene = WORLD_MAP;
         LevelUpEntity(&jogador->bag[jogador->currentEntity]);
+
+        HealParty(jogador->bag);
 
         closestToDeath = min(closestToDeath,heartsCounter[0]);
         worldTurn = 0; battleTurn = 0;
         
-        if(enemy.health.current <= 0){
+        if(enemy->health.current <= 0){
             enemiesKilled++;
-            gotoxy(4,MAX_LINHA-2); printf("Inimigo perdeu a batalha");
+            KillEntity(enemy);
+            strcpy(logs[1], "Inimigo perdeu a batalha");
         }
-        else{
-            gotoxy(4,MAX_LINHA-2); printf("Capturado com sucesso");
-        }
-        getch();
     }
     else if(jogador->bag[jogador->currentEntity].health.current <= 0){
-        bool hasEntityLeft = FALSE;
-        
+        KillEntity(&jogador->bag[jogador->currentEntity]);
+
+        hasEntityLeft = FALSE;
         for(int i = 0; i < 4; i++){
             if(jogador->bag[i].health.current > 0){
                 hasEntityLeft = TRUE;
@@ -237,8 +238,7 @@ void BattleWinLogic(struct entity enemy, struct player *jogador, bool win){
         }
         else{
             scene = GAME_END;
-            gotoxy(4,MAX_LINHA-3); printf("Perdeu");
-            getch();
+            strcpy(logs[0], "Perdeu");
         }
     }
 }

@@ -190,5 +190,41 @@ void Debug(struct player jogador){
     }
 }
 
+void BattleRender(struct entity *enemy, struct player *jogador, char logs[2][60], int attempt[2]){
+    textbackground(backgroundType); textcolor(MAGENTA);
+    Moldura(TRUE, '+', '|', '=');
+    
+    PrintPortrait(
+        78,2,
+        enemy->specie.portrait,
+        heartsCounter[1], 
+        elementColor[enemy->specie.element[0]], 
+        elementColor[enemy->specie.element[1]]
+    );
+    PrintHearts(heartsCounter[1], 72, 9);
+    PrintName(72, 11, enemy->indentifier.name, enemy->level);
+
+    PrintPortrait(
+        4,14,
+        jogador->bag[jogador->currentEntity].specie.portrait,
+        heartsCounter[0], 
+        elementColor[jogador->bag[jogador->currentEntity].specie.element[0]], 
+        elementColor[jogador->bag[jogador->currentEntity].specie.element[1]]
+    );
+    PrintHearts(heartsCounter[0], 4, 11);
+    PrintName(4, 9, jogador->bag[jogador->currentEntity].indentifier.name, jogador->bag[jogador->currentEntity].level);
+
+    for(int i = 0; i < 2; i++){
+        snprintf(logs[i], 60, "%s (%d)", logs[i], attempt[i]);
+    }
+
+    gotoxy(4,MAX_LINHA-3); printf(logs[0]);
+    gotoxy(4,MAX_LINHA-2); printf(logs[1]);
+
+    WriteBox("ATTACK", "SWITCH", "CATCH", "FLEE");
+
+    gotoxy(2,2); printf("Turno %d", battleTurn);
+}
+
 
 #endif
